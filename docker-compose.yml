@@ -1,0 +1,17 @@
+version: "3.7"
+
+services:
+  notifier:
+    hostname: notifier
+    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    environment:
+      DEBUG: "false"
+      APP_PORT: "8888"
+    volumes:
+      - .:/app
+    ports:
+      - "8888:8888"
