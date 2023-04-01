@@ -1,13 +1,11 @@
 package routers
 
 import (
-	handlers "github.com/WildEgor/gNotifier/internal/handlers/http"
 	middleware "github.com/WildEgor/gNotifier/internal/middlewares"
 	"github.com/gofiber/fiber/v2"
 )
 
 type HTTPRouter struct {
-	healthCheckHandler *handlers.HealthCheckHandler
 }
 
 func NewHTTPRouter() *HTTPRouter {
