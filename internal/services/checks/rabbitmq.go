@@ -76,6 +76,7 @@ func NewRabbitMQCheck(cfg *RabbitMQCheckConfig) func(ctx context.Context) error 
 			}
 		}()
 
+		// HINT: Create publisher and consumer
 		publisher, err := rabbitmq.NewPublisher(
 			conn,
 			rabbitmq.WithPublisherOptionsLogging,
@@ -91,6 +92,7 @@ func NewRabbitMQCheck(cfg *RabbitMQCheckConfig) func(ctx context.Context) error 
 		consumer, err := rabbitmq.NewConsumer(
 			conn,
 			func(d rabbitmq.Delivery) (action rabbitmq.Action) {
+				fmt.Printf("[RabbitMQCheck] consumed: %v", string(d.Body))
 				return rabbitmq.Ack
 			},
 			cfg.Queue,
@@ -112,7 +114,7 @@ func NewRabbitMQCheck(cfg *RabbitMQCheckConfig) func(ctx context.Context) error 
 
 		err = publisher.PublishWithContext(
 			context.Background(),
-			[]byte(""),
+			[]byte("test"),
 			[]string{cfg.Exchange},
 			rabbitmq.WithPublishOptionsContentType("application/json"),
 			rabbitmq.WithPublishOptionsExchange(cfg.Exchange),

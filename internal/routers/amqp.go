@@ -49,15 +49,43 @@ func (r *AMQPRouter) SetupRoutes() error {
 		rabbitmq.WithConnectionOptionsLogging,
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("[AMQPRouter] Failed to connect: ", err)
 	}
 	defer conn.Close()
 
+	// consumer, err := rabbitmq.NewConsumer(
+	// 	conn,
+	// 	func(d rabbitmq.Delivery) (action rabbitmq.Action) {
+	// 		log.Info(d)
+	// 		return rabbitmq.Ack
+	// 	},
+	// 	"notifier-queue",
+	// 	rabbitmq.WithConsumerOptionsRoutingKey("notifier.send-notification"),
+	// 	rabbitmq.WithConsumerOptionsExchangeName("notifications"),
+	// 	rabbitmq.WithConsumerOptionsExchangeDeclare,
+	// 	rabbitmq.WithConsumerOptionsExchangeDurable,
+	// 	rabbitmq.WithConsumerOptionsExchangeKind("direct"),
+	// 	rabbitmq.WithConsumerOptionsBinding(rabbitmq.Binding{
+	// 		RoutingKey: "notifier.send-notification",
+	// 		BindingOptions: rabbitmq.BindingOptions{
+	// 			Declare: true,
+	// 		},
+	// 	}),
+	// )
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// defer consumer.Close()
+
 	consumer, err := rabbitmq.NewConsumer(
 		conn,
-		r.notifierHandler.Handle,
-		"notifier-queue",
-		rabbitmq.WithConsumerOptionsRoutingKey("notifier.send-notification"),
+		func(d rabbitmq.Delivery) rabbitmq.Action {
+			log.Printf("consumed: %v", string(d.Body))
+			// rabbitmq.Ack, rabbitmq.NackDiscard, rabbitmq.NackRequeue
+			return rabbitmq.Ack
+		},
+		"my_queue",
+		rabbitmq.WithConsumerOptionsRoutingKey("my_routing_key"),
 		rabbitmq.WithConsumerOptionsExchangeName("events"),
 		rabbitmq.WithConsumerOptionsExchangeDeclare,
 	)

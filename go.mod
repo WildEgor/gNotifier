@@ -10,6 +10,7 @@ require (
 
 require (
 	github.com/rabbitmq/amqp091-go v1.8.0 // indirect
+	github.com/streadway/amqp v1.0.0 // indirect
 	github.com/stretchr/testify v1.8.1 // indirect
 )
 

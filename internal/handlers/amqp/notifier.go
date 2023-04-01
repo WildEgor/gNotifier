@@ -16,8 +16,9 @@ func NewNotifierHandler() *NotifierHandler {
 	return &NotifierHandler{}
 }
 
-func (h *NotifierHandler) Handle(data rabbitmq.Delivery) rabbitmq.Action {
-	notifierRequest := h.initRequest(data.Body)
+func (h *NotifierHandler) Handle(b []byte) rabbitmq.Action {
+	log.Info(b)
+	notifierRequest := h.initRequest(b)
 	if notifierRequest.HasError() {
 		return h.resend(notifierRequest)
 	}
