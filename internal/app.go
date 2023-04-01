@@ -1,26 +1,53 @@
-package pkg
+package app
 
 import (
-	"github.com/gofiber/cors"
-	"github.com/gofiber/fiber"
+	"context"
+	"fmt"
+
+	"github.com/WildEgor/gNotifier/internal/adapters"
+	"github.com/WildEgor/gNotifier/internal/config"
+	handlers_http "github.com/WildEgor/gNotifier/internal/handlers/http"
+	"github.com/WildEgor/gNotifier/internal/routers"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/google/wire"
 	log "github.com/sirupsen/logrus"
 )
 
-var AppSet = wire.NewSet(NewApp)
+var AppSet = wire.NewSet(
+	NewApp,
+	adapters.AdaptersSet,
+	config.ConfigSet,
+	routers.RoutersSet,
+)
 
-func NewApp() *fiber.App {
-	app := fiber.New()
+func NewApp(
+	appConfig *config.AppConfig,
+	httpRouter *routers.HTTPRouter,
+	amqpRouter *routers.AMQPRouter,
+) *fiber.App {
+	app := fiber.New(fiber.Config{
+		ErrorHandler: handlers_http.ErrorHandler,
+	})
 
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: []string{"*"},
+		AllowHeaders:     "Origin, Content-Type, Accept, Content-Length, Accept-Language, Accept-Encoding, Connection, Access-Control-Allow-Origin",
+		AllowOrigins:     "*",
+		AllowCredentials: true,
+		AllowMethods:     "GET,POST,HEAD,PUT,DELETE,PATCH,OPTIONS",
 	}))
+	app.Use(recover.New())
 
-	// v1 := app.Group("/api/v1")
+	if !appConfig.IsProduction() {
+		log.SetLevel(log.DebugLevel)
+	} else {
+		log.SetLevel(log.ErrorLevel)
+	}
 
-	// Server endpoint - sanity check that the server is running
-	// statusGroup := v1.Group("/health")
+	httpRouter.SetupRoutes(app)
+	amqpRouter.SetupRoutes(context.Background())
 
-	log.Infof("Application is running on %d port...", 8888)
+	log.Info(fmt.Sprintf("Application is running on %v port...", appConfig.Port))
 	return app
 }

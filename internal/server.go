@@ -1,7 +1,10 @@
-package pkg
+//go:build wireinject
+// +build wireinject
+
+package app
 
 import (
-	"github.com/gofiber/fiber"
+	"github.com/gofiber/fiber/v2"
 	"github.com/google/wire"
 )
 

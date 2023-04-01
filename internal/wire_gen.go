@@ -4,20 +4,33 @@
 //go:build !wireinject
 // +build !wireinject
 
-package pkg
+package app
 
 import (
-	"github.com/gofiber/fiber"
+	"github.com/WildEgor/gNotifier/internal/adapters"
+	"github.com/WildEgor/gNotifier/internal/config"
+	"github.com/WildEgor/gNotifier/internal/handlers/amqp"
+	"github.com/WildEgor/gNotifier/internal/routers"
+	"github.com/gofiber/fiber/v2"
 	"github.com/google/wire"
 )
 
 // Injectors from server.go:
 
-func New() (*fiber.App, error) {
-	app := NewApp()
+func NewServer() (*fiber.App, error) {
+	appConfig := config.NewAppConfig()
+	httpRouter := routers.NewHTTPRouter()
+	notifierHandler := handlers.NewNotifierHandler()
+	amqpConfig := config.NewAMQPConfig()
+	healthCheckAdapter, err := adapters.NewHealthCheckAdapter()
+	if err != nil {
+		return nil, err
+	}
+	amqpRouter := routers.NewAMQPRouter(notifierHandler, amqpConfig, healthCheckAdapter)
+	app := NewApp(appConfig, httpRouter, amqpRouter)
 	return app, nil
 }
 
 // server.go:
 
-var Set = wire.NewSet(AppSet)
+var ServerSet = wire.NewSet(AppSet)

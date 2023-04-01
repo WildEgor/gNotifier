@@ -5,9 +5,14 @@ go 1.20
 require github.com/spf13/viper v1.15.0
 
 require (
+	github.com/caarlos0/env/v7 v7.1.0 // indirect
 	github.com/gofiber/fiber v1.13.3 // indirect
 	github.com/gofiber/utils v0.0.9 // indirect
 	github.com/gorilla/schema v1.1.0 // indirect
+	github.com/joho/godotenv v1.5.1 // indirect
+	github.com/rabbitmq/amqp091-go v1.8.0 // indirect
+	github.com/streadway/amqp v1.0.0 // indirect
+	github.com/wagslane/go-rabbitmq v0.12.3 // indirect
 )
 
 require (
