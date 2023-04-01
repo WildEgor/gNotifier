@@ -1,7 +1,6 @@
 package routers
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/WildEgor/gNotifier/internal/adapters"
@@ -17,6 +16,8 @@ type AMQPRouter struct {
 	amqpConfig        *config.AMQPConfig
 	healtCheckAdapter *adapters.HealthCheckAdapter
 	amqpAdapter       adapters.IRabbitMQAdapter
+	consumers         map[string]rabbitmq.Consumer
+	connection        *rabbitmq.Conn
 }
 
 func NewAMQPRouter(
@@ -30,6 +31,7 @@ func NewAMQPRouter(
 		amqpConfig:        amqpConfig,
 		healtCheckAdapter: healtCheckAdapter,
 		amqpAdapter:       amqpAdapter,
+		consumers:         make(map[string]rabbitmq.Consumer),
 	}
 }
 
@@ -48,21 +50,18 @@ func (r *AMQPRouter) SetupRoutes() error {
 		}),
 	})
 
-	connection, err := rabbitmq.NewConn(
+	var err error
+	r.connection, err = rabbitmq.NewConn(
 		r.amqpConfig.URI,
 		rabbitmq.WithConnectionOptionsLogging,
 	)
 	if err != nil {
 		log.Fatal("[AMQPRouter] Failed to connect: ", err)
 	}
-	defer connection.Close()
 
 	consumer, err := rabbitmq.NewConsumer(
-		connection,
-		func(d rabbitmq.Delivery) (action rabbitmq.Action) {
-			fmt.Printf("[AMQPRouter] consumed: %v", string(d.Body))
-			return rabbitmq.Ack
-		},
+		r.connection,
+		r.notifierHandler.Handle,
 		"notifier-queue",
 		rabbitmq.WithConsumerOptionsRoutingKey("notifier.send-notification"),
 		rabbitmq.WithConsumerOptionsExchangeName("notifications"),
@@ -71,7 +70,15 @@ func (r *AMQPRouter) SetupRoutes() error {
 	if err != nil {
 		log.Fatal("[AMQPRouter] Failed consume: ", err)
 	}
-	defer consumer.Close()
+	r.consumers["notifier-queue::notifier.send-notification::notifications"] = *consumer
 
 	return nil
+}
+
+func (r *AMQPRouter) Close() {
+	log.Info("[AMQPRouter] Close connection...")
+	defer r.connection.Close()
+	for _, v := range r.consumers {
+		defer v.Close()
+	}
 }

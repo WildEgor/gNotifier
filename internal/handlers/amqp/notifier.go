@@ -2,10 +2,10 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	notifier_dtos "github.com/WildEgor/gNotifier/internal/dtos/notifier"
-	log "github.com/sirupsen/logrus"
 	"github.com/wagslane/go-rabbitmq"
 )
 
@@ -16,15 +16,15 @@ func NewNotifierHandler() *NotifierHandler {
 	return &NotifierHandler{}
 }
 
-func (h *NotifierHandler) Handle(b []byte) rabbitmq.Action {
-	log.Info(b)
-	notifierRequest := h.initRequest(b)
+func (h *NotifierHandler) Handle(d rabbitmq.Delivery) rabbitmq.Action {
+	fmt.Printf("[NotifierHandler] consumed: %v\n", string(d.Body))
+	notifierRequest := h.initRequest(d.Body)
 	if notifierRequest.HasError() {
 		return h.resend(notifierRequest)
 	}
 
 	// TODO: impl logic here
-	log.Info(notifierRequest)
+	fmt.Print(notifierRequest)
 
 	return rabbitmq.Ack
 }
@@ -39,7 +39,7 @@ func (h *NotifierHandler) initRequest(b []byte) *notifier_dtos.NotifierRequestDt
 }
 
 func (h *NotifierHandler) resend(req *notifier_dtos.NotifierRequestDto) rabbitmq.Action {
-	log.Error("[NotifierHandler] Error: ", req.Error)
+	fmt.Printf("[NotifierHandler] Error: %v", req.Error)
 	// reqRes := notifier_dtos.NotifierResendRequestDto{
 	// 	Req:     *parsedRequest,
 	// 	Error:   parsedRequest.Error.Error(),
@@ -47,6 +47,6 @@ func (h *NotifierHandler) resend(req *notifier_dtos.NotifierRequestDto) rabbitmq
 	// }
 	// TODO: resend to error queue
 	time.Sleep(time.Millisecond * 18)
-	log.Println("[NotifierHandler] execute task: ", time.Now().Sub(req.TimeReqStart).String())
+	fmt.Printf("[NotifierHandler] execute task: ", time.Now().Sub(req.TimeReqStart).String())
 	return rabbitmq.Ack
 }

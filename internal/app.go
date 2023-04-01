@@ -48,5 +48,6 @@ func NewApp(
 	amqpRouter.SetupRoutes()
 
 	log.Info(fmt.Sprintf("Application is running on %v port...", appConfig.Port))
+
 	return app
 }

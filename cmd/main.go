@@ -2,18 +2,33 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
 	server "github.com/WildEgor/gNotifier/internal"
+	"github.com/gofiber/fiber/v2"
 	log "github.com/sirupsen/logrus"
 )
 
-func main() {
-	server, _ := server.NewServer()
-	log.Fatal(server.Listen(fmt.Sprintf(":%v", "8888")))
+var srv *fiber.App
 
+func main() {
+	Start()
+	Shutdown()
+}
+
+func Start() {
+	srv, _ = server.NewServer()
+	go func() {
+		if err := srv.Listen(fmt.Sprintf(":%v", "8888")); err != nil && err != http.ErrServerClosed {
+			panic(err)
+		}
+	}()
+}
+
+func Shutdown() {
 	// block main thread - wait for shutdown signal
 	sigs := make(chan os.Signal, 1)
 	done := make(chan bool, 1)
