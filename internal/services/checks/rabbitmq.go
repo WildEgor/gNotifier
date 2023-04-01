@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/streadway/amqp"
+	"github.com/wagslane/go-rabbitmq"
 )
 
 const (
@@ -61,11 +61,12 @@ func NewRabbitMQCheck(cfg *RabbitMQCheckConfig) func(ctx context.Context) error 
 	cfg.initDefaultConfig()
 
 	return func(ctx context.Context) (checkErr error) {
-		conn, err := amqp.DialConfig(cfg.URI, amqp.Config{
-			Dial: amqp.DefaultDial(cfg.DialTimeout),
-		})
+		conn, err := rabbitmq.NewConn(
+			cfg.URI,
+			rabbitmq.WithConnectionOptionsLogging,
+		)
 		if err != nil {
-			checkErr = fmt.Errorf("[RabbitMQCheck] Failed on dial phase: %w", err)
+			checkErr = fmt.Errorf("[RabbitMQCheck] Failed on connection: %w", err)
 			return
 		}
 		defer func() {
@@ -75,70 +76,51 @@ func NewRabbitMQCheck(cfg *RabbitMQCheckConfig) func(ctx context.Context) error 
 			}
 		}()
 
-		ch, err := conn.Channel()
+		publisher, err := rabbitmq.NewPublisher(
+			conn,
+			rabbitmq.WithPublisherOptionsLogging,
+			rabbitmq.WithPublisherOptionsExchangeName(cfg.Exchange),
+			rabbitmq.WithPublisherOptionsExchangeDeclare,
+			rabbitmq.WithPublisherOptionsExchangeKind("topic"),
+		)
 		if err != nil {
-			checkErr = fmt.Errorf("[RabbitMQCheck] failed on getting channel phase: %w", err)
-			return
+			checkErr = fmt.Errorf("[RabbitMQCheck] Failed on getting channel phase: %w", err)
 		}
-		defer func() {
-			// override checkErr only if there were no other errors
-			if err := ch.Close(); err != nil && checkErr == nil {
-				checkErr = fmt.Errorf("[RabbitMQCheck] Failed to close channel: %w", err)
-			}
-		}()
+		defer publisher.Close()
 
-		if err := ch.ExchangeDeclare(cfg.Exchange, "topic", true, false, false, false, nil); err != nil {
-			checkErr = fmt.Errorf("[RabbitMQCheck] Failed during declaring exchange: %w", err)
-			return
-		}
-
-		if _, err := ch.QueueDeclare(cfg.Queue, false, false, false, false, nil); err != nil {
-			checkErr = fmt.Errorf("[RabbitMQCheck] Failed during declaring queue: %w", err)
-			return
-		}
-
-		if err := ch.QueueBind(cfg.Queue, cfg.RoutingKey, cfg.Exchange, false, nil); err != nil {
-			checkErr = fmt.Errorf("[RabbitMQCheck] Failed during binding: %w", err)
-			return
-		}
-
-		messages, err := ch.Consume(cfg.Queue, "", true, false, false, false, nil)
+		consumer, err := rabbitmq.NewConsumer(
+			conn,
+			func(d rabbitmq.Delivery) (action rabbitmq.Action) {
+				return rabbitmq.Ack
+			},
+			cfg.Queue,
+			rabbitmq.WithConsumerOptionsRoutingKey(cfg.RoutingKey),
+			rabbitmq.WithConsumerOptionsExchangeName(cfg.Exchange),
+			rabbitmq.WithConsumerOptionsExchangeDeclare,
+			rabbitmq.WithConsumerOptionsExchangeKind("topic"),
+			rabbitmq.WithConsumerOptionsBinding(rabbitmq.Binding{
+				RoutingKey: cfg.RoutingKey,
+				BindingOptions: rabbitmq.BindingOptions{
+					Declare: true,
+				},
+			}),
+		)
 		if err != nil {
-			checkErr = fmt.Errorf("[RabbitMQCheck] Failed during consuming: %w", err)
-			return
+			checkErr = fmt.Errorf("[RabbitMQCheck] Failed consume: %w", err)
+		}
+		defer consumer.Close()
+
+		err = publisher.PublishWithContext(
+			context.Background(),
+			[]byte(""),
+			[]string{cfg.Exchange},
+			rabbitmq.WithPublishOptionsContentType("application/json"),
+			rabbitmq.WithPublishOptionsExchange(cfg.Exchange),
+		)
+		if err != nil {
+			checkErr = fmt.Errorf("[RabbitMQCheck] failed publish: %w", err)
 		}
 
-		done := make(chan struct{})
-
-		// HINT: consume messages in goroutine
-		go func() {
-			// block until: a message is received, or message channel is closed (consume timeout)
-			<-messages
-			// release the channel resources, and unblock the receive on done below
-			close(done)
-			// now drain any incidental remaining messages
-			for range messages {
-			}
-		}()
-
-		// HINT: send check messages to the same exchange
-		p := amqp.Publishing{Body: []byte(time.Now().Format(time.RFC3339Nano))}
-		if err := ch.Publish(cfg.Exchange, cfg.RoutingKey, false, false, p); err != nil {
-			checkErr = fmt.Errorf("[RabbitMQCheck] Failed during publishing: %w", err)
-			return
-		}
-
-		for {
-			select {
-			case <-time.After(cfg.ConsumeTimeout):
-				checkErr = fmt.Errorf("[RabbitMQCheck] Failed due to consume timeout: %w", err)
-				return
-			case <-ctx.Done():
-				checkErr = fmt.Errorf("[RabbitMQCheck] Failed due "+"to health check listener disconnect: %w", ctx.Err())
-				return
-			case <-done:
-				return
-			}
-		}
+		return checkErr
 	}
 }

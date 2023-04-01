@@ -1,7 +1,6 @@
 package routers
 
 import (
-	"context"
 	"time"
 
 	"github.com/WildEgor/gNotifier/internal/adapters"
@@ -30,14 +29,18 @@ func NewAMQPRouter(
 	}
 }
 
-func (r *AMQPRouter) SetupRoutes(ctx context.Context) error {
+func (r *AMQPRouter) SetupRoutes() error {
 	r.healtCheckAdapter.Register(adapters.HealthConfig{
 		Name:      "amqp-health-check",
-		Timeout:   time.Duration(5 * time.Second),
+		Timeout:   time.Duration(10 * time.Second),
 		SkipOnErr: false,
 		Check: checks.NewRabbitMQCheck(&checks.RabbitMQCheckConfig{
-			URI:         r.amqpConfig.URI,
-			DialTimeout: time.Duration(5 * time.Second),
+			URI:            r.amqpConfig.URI,
+			DialTimeout:    time.Duration(5 * time.Second),
+			Exchange:       "health-check",
+			Queue:          "health-queue",
+			RoutingKey:     "health-check",
+			ConsumeTimeout: time.Duration(5 * time.Second),
 		}),
 	})
 
@@ -53,7 +56,7 @@ func (r *AMQPRouter) SetupRoutes(ctx context.Context) error {
 	consumer, err := rabbitmq.NewConsumer(
 		conn,
 		r.notifierHandler.Handle,
-		"notifier",
+		"notifier-queue",
 		rabbitmq.WithConsumerOptionsRoutingKey("notifier.send-notification"),
 		rabbitmq.WithConsumerOptionsExchangeName("events"),
 		rabbitmq.WithConsumerOptionsExchangeDeclare,

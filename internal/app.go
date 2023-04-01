@@ -1,7 +1,6 @@
 package app
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/WildEgor/gNotifier/internal/adapters"
@@ -46,7 +45,7 @@ func NewApp(
 	}
 
 	httpRouter.SetupRoutes(app)
-	amqpRouter.SetupRoutes(context.Background())
+	amqpRouter.SetupRoutes()
 
 	log.Info(fmt.Sprintf("Application is running on %v port...", appConfig.Port))
 	return app

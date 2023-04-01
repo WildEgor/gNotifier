@@ -3,6 +3,7 @@ package middleware
 import (
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/WildEgor/gNotifier/internal/adapters"
 	"github.com/gofiber/fiber/v2"
@@ -26,23 +27,27 @@ func HealthCheck(cfg *HealthCheckConfig) fiber.Handler {
 				if info.Status != adapters.StatusOK {
 					return ctx.Status(http.StatusInternalServerError).JSON(fiber.Map{
 						"isOk": false,
-						"data": fiber.Map{
-							"errors": info.Failures,
-						},
+						"data": info.Failures,
 					})
 				}
 
 				return ctx.Status(http.StatusOK).JSON(fiber.Map{
 					"isOk": true,
 					"data": fiber.Map{
-						"state": info,
+						"status":    info.Status,
+						"timestamp": info.Timestamp,
+						"message":   info.ComponentInfo.Name,
 					},
 				})
 			}
 
 			return ctx.Status(http.StatusOK).JSON(fiber.Map{
 				"isOk": true,
-				"data": fiber.Map{},
+				"data": fiber.Map{
+					"status":    "OK",
+					"timestamp": time.Now(),
+					"message":   "",
+				},
 			})
 		}
 

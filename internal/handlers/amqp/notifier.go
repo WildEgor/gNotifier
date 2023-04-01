@@ -17,12 +17,13 @@ func NewNotifierHandler() *NotifierHandler {
 }
 
 func (h *NotifierHandler) Handle(data rabbitmq.Delivery) rabbitmq.Action {
-	req := h.initRequest(data.Body)
-	if req.HasError() {
-		h.resend(req)
+	notifierRequest := h.initRequest(data.Body)
+	if notifierRequest.HasError() {
+		return h.resend(notifierRequest)
 	}
 
 	// TODO: impl logic here
+	log.Info(notifierRequest)
 
 	return rabbitmq.Ack
 }
@@ -36,7 +37,7 @@ func (h *NotifierHandler) initRequest(b []byte) *notifier_dtos.NotifierRequestDt
 	return &req
 }
 
-func (h *NotifierHandler) resend(req *notifier_dtos.NotifierRequestDto) {
+func (h *NotifierHandler) resend(req *notifier_dtos.NotifierRequestDto) rabbitmq.Action {
 	log.Error("[NotifierHandler] Error: ", req.Error)
 	// reqRes := notifier_dtos.NotifierResendRequestDto{
 	// 	Req:     *parsedRequest,
@@ -45,5 +46,6 @@ func (h *NotifierHandler) resend(req *notifier_dtos.NotifierRequestDto) {
 	// }
 	// TODO: resend to error queue
 	time.Sleep(time.Millisecond * 18)
-	log.Println("execute task: ", time.Now().Sub(req.TimeReqStart).String())
+	log.Println("[NotifierHandler] execute task: ", time.Now().Sub(req.TimeReqStart).String())
+	return rabbitmq.Ack
 }
