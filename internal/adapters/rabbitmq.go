@@ -4,38 +4,41 @@ import (
 	"log"
 
 	"github.com/WildEgor/gNotifier/internal/config"
-	"github.com/streadway/amqp"
+	"github.com/wagslane/go-rabbitmq"
 )
 
 type IRabbitMQAdapter interface {
-	GetChannel() *amqp.Channel
+	GetConnection() *rabbitmq.Conn
+	SetConsumer(c *rabbitmq.Consumer)
 }
 
 type RabbitMQAdapter struct {
 	amqpConfig *config.AMQPConfig
-	Connection *amqp.Connection
-	Channel    *amqp.Channel
+	connection *rabbitmq.Conn
+	consumers  *map[string]rabbitmq.Consumer
 }
 
 func NewRabbitMQAdapter(
 	amqpConfig *config.AMQPConfig,
 ) *RabbitMQAdapter {
-	connection, err := amqp.Dial(amqpConfig.URI)
+	connection, err := rabbitmq.NewConn(
+		amqpConfig.URI,
+		rabbitmq.WithConnectionOptionsLogging,
+	)
 	if err != nil {
-		log.Fatal("[RabbitMQAdapter] Failed to connect: ", err)
+		log.Fatal("[AMQPRouter] Failed to connect: ", err)
 	}
-
-	channel, err := connection.Channel()
-	if err != nil {
-		log.Fatal("[RabbitMQAdapter] Failed to open channel: ", err)
-	}
+	defer connection.Close()
 
 	return &RabbitMQAdapter{
-		Connection: connection,
-		Channel:    channel,
+		connection: connection,
 	}
 }
 
-func (r *RabbitMQAdapter) GetChannel() *amqp.Channel {
-	return r.Channel
+func (r *RabbitMQAdapter) GetConnection() *rabbitmq.Conn {
+	return r.connection
+}
+
+func (r *RabbitMQAdapter) SetConsumer(c *rabbitmq.Consumer) {
+	defer c.Close()
 }

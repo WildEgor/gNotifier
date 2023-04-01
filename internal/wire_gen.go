@@ -26,7 +26,8 @@ func NewServer() (*fiber.App, error) {
 	httpRouter := routers.NewHTTPRouter(healthCheckAdapter)
 	notifierHandler := handlers.NewNotifierHandler()
 	amqpConfig := config.NewAMQPConfig()
-	amqpRouter := routers.NewAMQPRouter(notifierHandler, amqpConfig, healthCheckAdapter)
+	rabbitMQAdapter := adapters.NewRabbitMQAdapter(amqpConfig)
+	amqpRouter := routers.NewAMQPRouter(notifierHandler, amqpConfig, healthCheckAdapter, rabbitMQAdapter)
 	app := NewApp(appConfig, httpRouter, amqpRouter)
 	return app, nil
 }

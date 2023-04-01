@@ -1,6 +1,7 @@
 package routers
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/WildEgor/gNotifier/internal/adapters"
@@ -15,17 +16,20 @@ type AMQPRouter struct {
 	notifierHandler   *handlers.NotifierHandler
 	amqpConfig        *config.AMQPConfig
 	healtCheckAdapter *adapters.HealthCheckAdapter
+	amqpAdapter       adapters.IRabbitMQAdapter
 }
 
 func NewAMQPRouter(
 	notifierHandler *handlers.NotifierHandler,
 	amqpConfig *config.AMQPConfig,
 	healtCheckAdapter *adapters.HealthCheckAdapter,
+	amqpAdapter adapters.IRabbitMQAdapter,
 ) *AMQPRouter {
 	return &AMQPRouter{
 		notifierHandler:   notifierHandler,
 		amqpConfig:        amqpConfig,
 		healtCheckAdapter: healtCheckAdapter,
+		amqpAdapter:       amqpAdapter,
 	}
 }
 
@@ -44,53 +48,28 @@ func (r *AMQPRouter) SetupRoutes() error {
 		}),
 	})
 
-	conn, err := rabbitmq.NewConn(
+	connection, err := rabbitmq.NewConn(
 		r.amqpConfig.URI,
 		rabbitmq.WithConnectionOptionsLogging,
 	)
 	if err != nil {
 		log.Fatal("[AMQPRouter] Failed to connect: ", err)
 	}
-	defer conn.Close()
-
-	// consumer, err := rabbitmq.NewConsumer(
-	// 	conn,
-	// 	func(d rabbitmq.Delivery) (action rabbitmq.Action) {
-	// 		log.Info(d)
-	// 		return rabbitmq.Ack
-	// 	},
-	// 	"notifier-queue",
-	// 	rabbitmq.WithConsumerOptionsRoutingKey("notifier.send-notification"),
-	// 	rabbitmq.WithConsumerOptionsExchangeName("notifications"),
-	// 	rabbitmq.WithConsumerOptionsExchangeDeclare,
-	// 	rabbitmq.WithConsumerOptionsExchangeDurable,
-	// 	rabbitmq.WithConsumerOptionsExchangeKind("direct"),
-	// 	rabbitmq.WithConsumerOptionsBinding(rabbitmq.Binding{
-	// 		RoutingKey: "notifier.send-notification",
-	// 		BindingOptions: rabbitmq.BindingOptions{
-	// 			Declare: true,
-	// 		},
-	// 	}),
-	// )
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// defer consumer.Close()
+	defer connection.Close()
 
 	consumer, err := rabbitmq.NewConsumer(
-		conn,
-		func(d rabbitmq.Delivery) rabbitmq.Action {
-			log.Printf("consumed: %v", string(d.Body))
-			// rabbitmq.Ack, rabbitmq.NackDiscard, rabbitmq.NackRequeue
+		connection,
+		func(d rabbitmq.Delivery) (action rabbitmq.Action) {
+			fmt.Printf("[AMQPRouter] consumed: %v", string(d.Body))
 			return rabbitmq.Ack
 		},
-		"my_queue",
-		rabbitmq.WithConsumerOptionsRoutingKey("my_routing_key"),
-		rabbitmq.WithConsumerOptionsExchangeName("events"),
+		"notifier-queue",
+		rabbitmq.WithConsumerOptionsRoutingKey("notifier.send-notification"),
+		rabbitmq.WithConsumerOptionsExchangeName("notifications"),
 		rabbitmq.WithConsumerOptionsExchangeDeclare,
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("[AMQPRouter] Failed consume: ", err)
 	}
 	defer consumer.Close()
 
