@@ -1,4 +1,4 @@
-module github.com/WildEgor/notifier
+module github.com/WildEgor/gNotifier
 
 go 1.20
 

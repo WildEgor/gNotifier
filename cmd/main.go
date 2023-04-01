@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	server "github.com/WildEgor/notifier/pkg"
+	server "github.com/WildEgor/gNotifier/internal"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
