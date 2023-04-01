@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -32,8 +31,6 @@ func HealthCheck(cfg *HealthCheckConfig) fiber.Handler {
 						},
 					})
 				}
-
-				fmt.Print(info)
 
 				return ctx.Status(http.StatusOK).JSON(fiber.Map{
 					"isOk": true,

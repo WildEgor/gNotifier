@@ -36,7 +36,8 @@ func (r *AMQPRouter) SetupRoutes(ctx context.Context) error {
 		Timeout:   time.Duration(5 * time.Second),
 		SkipOnErr: false,
 		Check: checks.NewRabbitMQCheck(&checks.RabbitMQCheckConfig{
-			URI: r.amqpConfig.URI,
+			URI:         r.amqpConfig.URI,
+			DialTimeout: time.Duration(5 * time.Second),
 		}),
 	})
 
