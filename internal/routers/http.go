@@ -1,20 +1,27 @@
 package routers
 
 import (
+	"github.com/WildEgor/gNotifier/internal/adapters"
 	middleware "github.com/WildEgor/gNotifier/internal/middlewares"
 	"github.com/gofiber/fiber/v2"
 )
 
 type HTTPRouter struct {
+	ha *adapters.HealthCheckAdapter
 }
 
-func NewHTTPRouter() *HTTPRouter {
-	return &HTTPRouter{}
+func NewHTTPRouter(
+	ha *adapters.HealthCheckAdapter,
+) *HTTPRouter {
+	return &HTTPRouter{
+		ha: ha,
+	}
 }
 
 func (r *HTTPRouter) SetupRoutes(app *fiber.App) error {
 	hCfg := middleware.HealthCheckConfig{
-		Endpoint: "/api/v1/health/check",
+		Endpoint:           "/api/v1/health/check",
+		HealthCheckAdapter: r.ha,
 	}
 
 	app.Use(middleware.HealthCheck(&hCfg))

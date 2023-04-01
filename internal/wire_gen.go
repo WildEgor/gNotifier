@@ -19,13 +19,13 @@ import (
 
 func NewServer() (*fiber.App, error) {
 	appConfig := config.NewAppConfig()
-	httpRouter := routers.NewHTTPRouter()
-	notifierHandler := handlers.NewNotifierHandler()
-	amqpConfig := config.NewAMQPConfig()
 	healthCheckAdapter, err := adapters.NewHealthCheckAdapter()
 	if err != nil {
 		return nil, err
 	}
+	httpRouter := routers.NewHTTPRouter(healthCheckAdapter)
+	notifierHandler := handlers.NewNotifierHandler()
+	amqpConfig := config.NewAMQPConfig()
 	amqpRouter := routers.NewAMQPRouter(notifierHandler, amqpConfig, healthCheckAdapter)
 	app := NewApp(appConfig, httpRouter, amqpRouter)
 	return app, nil
