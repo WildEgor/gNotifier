@@ -14,7 +14,7 @@ func NewHTTPRouter() *HTTPRouter {
 
 func (r *HTTPRouter) SetupRoutes(app *fiber.App) error {
 	hCfg := middleware.HealthCheckConfig{
-		Endpoint: "/check",
+		Endpoint: "/api/v1/health/check",
 	}
 
 	app.Use(middleware.HealthCheck(&hCfg))

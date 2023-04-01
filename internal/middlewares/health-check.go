@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -16,6 +17,9 @@ func HealthCheck(cfg *HealthCheckConfig) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		methodName := ctx.Method()
 		path := ctx.Path()
+
+		fmt.Print("TEST\n")
+		fmt.Println(path, cfg.Endpoint)
 
 		if (methodName == "GET" || methodName == "HEAD") && strings.EqualFold(path, cfg.Endpoint) {
 			return ctx.Status(http.StatusOK).JSON(fiber.Map{
