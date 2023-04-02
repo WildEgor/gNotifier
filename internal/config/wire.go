@@ -9,4 +9,5 @@ var ConfigSet = wire.NewSet(
 	NewAPNConfig,
 	NewSMSConfig,
 	NewSMTPConfig,
+	NewMongoConfig,
 )

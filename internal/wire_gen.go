@@ -11,6 +11,7 @@ import (
 	"github.com/WildEgor/gNotifier/internal/config"
 	handlers2 "github.com/WildEgor/gNotifier/internal/handlers/amqp"
 	"github.com/WildEgor/gNotifier/internal/handlers/http"
+	"github.com/WildEgor/gNotifier/internal/repository/mongo"
 	"github.com/WildEgor/gNotifier/internal/routers"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/wire"
@@ -24,7 +25,17 @@ func NewServer() (*fiber.App, error) {
 	if err != nil {
 		return nil, err
 	}
-	storeTokenHandler := handlers.NewStoreTokenHandler()
+	mongoConfig := config.NewMongoConfig()
+	client, err := mongo.NewMongoClient(mongoConfig)
+	if err != nil {
+		return nil, err
+	}
+	database := mongo.NewMongoDatabase(client)
+	tokensRepository, err := mongo.NewTokensRepository(database)
+	if err != nil {
+		return nil, err
+	}
+	storeTokenHandler := handlers.NewStoreTokenHandler(tokensRepository)
 	unsubTokenHandler := handlers.NewUnsubTokenHandler()
 	httpRouter := routers.NewHTTPRouter(healthCheckAdapter, storeTokenHandler, unsubTokenHandler)
 	smtpConfig := config.NewSMTPConfig()

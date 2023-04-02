@@ -6,6 +6,7 @@ import (
 	"github.com/WildEgor/gNotifier/internal/adapters"
 	"github.com/WildEgor/gNotifier/internal/config"
 	handlers_http "github.com/WildEgor/gNotifier/internal/handlers/http"
+	"github.com/WildEgor/gNotifier/internal/repository"
 	"github.com/WildEgor/gNotifier/internal/routers"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -17,6 +18,7 @@ import (
 var AppSet = wire.NewSet(
 	NewApp,
 	adapters.AdaptersSet,
+	repository.RepositoriesSet,
 	config.ConfigSet,
 	routers.RoutersSet,
 )

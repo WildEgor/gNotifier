@@ -77,10 +77,12 @@ func (h *NotifierHandler) Handle(d rabbitmq.Delivery) rabbitmq.Action {
 	}
 
 	if notifierRequest.IsPush() {
+
+		// TODO: find tokens by To and Platform as sub_id in mongodb and use only tokens updated_at or created_at >= now() - 30 days!
 		notification := domain.PushNotification{
 			ID:      "", // TODO
-			To:      notifierRequest.PushSetting.To,
-			Tokens:  []string{notifierRequest.PushSetting.To},
+			To:      "",
+			Tokens:  []string{""},
 			Topic:   notifierRequest.PushSetting.To,
 			Message: notifierRequest.PushSetting.Message,
 			Title:   notifierRequest.PushSetting.Title,
