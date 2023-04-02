@@ -1,35 +1,48 @@
 package main
 
 import (
+	"fmt"
+	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 
 	server "github.com/WildEgor/gNotifier/internal"
+	"github.com/gofiber/fiber/v2"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 )
 
-func init() {
-	// HINT: set logger output
-	log.SetFormatter(&log.JSONFormatter{})
-	log.SetOutput(os.Stdout)
-	log.SetLevel(log.InfoLevel)
-
-	// HINT: load global .env
-	viper.SetConfigName(".env")
-	viper.SetConfigType("dotenv")
-	viper.AddConfigPath(".")
-	viper.AutomaticEnv()
-	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			log.Info("The .env file has not been found in the current directory")
-		} else {
-			log.Error(err.Error())
-		}
-	}
-}
+var srv *fiber.App
 
 func main() {
-	server, _ := server.New()
-	port := viper.Get("APP_PORT")
-	log.Fatal(server.Listen(port))
+	Start()
+	Shutdown()
+}
+
+func Start() {
+	srv, _ = server.NewServer()
+	go func() {
+		if err := srv.Listen(fmt.Sprintf(":%v", "8888")); err != nil && err != http.ErrServerClosed {
+			panic(err)
+		}
+	}()
+}
+
+func Shutdown() {
+	// block main thread - wait for shutdown signal
+	sigs := make(chan os.Signal, 1)
+	done := make(chan bool, 1)
+
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		sig := <-sigs
+		log.Println()
+		log.Println(sig)
+		done <- true
+	}()
+
+	log.Println("[Main] Awaiting signal")
+	<-done
+	log.Println("[Main] Stopping consumer")
 }

@@ -4,20 +4,44 @@
 //go:build !wireinject
 // +build !wireinject
 
-package pkg
+package app
 
 import (
-	"github.com/gofiber/fiber"
+	"github.com/WildEgor/gNotifier/internal/adapters"
+	"github.com/WildEgor/gNotifier/internal/config"
+	handlers2 "github.com/WildEgor/gNotifier/internal/handlers/amqp"
+	"github.com/WildEgor/gNotifier/internal/handlers/http"
+	"github.com/WildEgor/gNotifier/internal/routers"
+	"github.com/gofiber/fiber/v2"
 	"github.com/google/wire"
 )
 
 // Injectors from server.go:
 
-func New() (*fiber.App, error) {
-	app := NewApp()
+func NewServer() (*fiber.App, error) {
+	appConfig := config.NewAppConfig()
+	healthCheckAdapter, err := adapters.NewHealthCheckAdapter()
+	if err != nil {
+		return nil, err
+	}
+	storeTokenHandler := handlers.NewStoreTokenHandler()
+	unsubTokenHandler := handlers.NewUnsubTokenHandler()
+	httpRouter := routers.NewHTTPRouter(healthCheckAdapter, storeTokenHandler, unsubTokenHandler)
+	smtpConfig := config.NewSMTPConfig()
+	smtpAdapter := adapters.NewSMTPAdapter(smtpConfig)
+	smsConfig := config.NewSMSConfig()
+	smsAdapter := adapters.NewSMSAdapter(smsConfig)
+	fcmConfig := config.NewFCMConfig()
+	fcmAdapter := adapters.NewFCMAdapter(fcmConfig)
+	apnConfig := config.NewAPNConfig()
+	apnAdapter := adapters.NewAPNAdapter(apnConfig)
+	notifierHandler := handlers2.NewNotifierHandler(smtpAdapter, smsAdapter, fcmAdapter, apnAdapter)
+	amqpConfig := config.NewAMQPConfig()
+	amqpRouter := routers.NewAMQPRouter(notifierHandler, amqpConfig, healthCheckAdapter)
+	app := NewApp(appConfig, httpRouter, amqpRouter)
 	return app, nil
 }
 
 // server.go:
 
-var Set = wire.NewSet(AppSet)
+var ServerSet = wire.NewSet(AppSet)
