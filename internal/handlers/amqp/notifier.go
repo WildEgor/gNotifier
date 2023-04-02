@@ -1,8 +1,11 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"html/template"
 	"time"
 
 	"github.com/WildEgor/gNotifier/internal/adapters"
@@ -47,6 +50,14 @@ func (h *NotifierHandler) Handle(d rabbitmq.Delivery) rabbitmq.Action {
 			Message: notifierRequest.EmailSetting.Text,
 		}
 
+		if notifierRequest.WithTemplate() {
+			msg, err := h.parseTemplate(notifierRequest)
+			if err != nil {
+				//
+			}
+			notification.Message = msg
+		}
+
 		if err := h.smtpAdapter.Send(&notification); err != nil {
 			// TODO
 			log.Errorf("[] Failed send to: ", notifierRequest.EmailSetting.Email)
@@ -73,6 +84,14 @@ func (h *NotifierHandler) Handle(d rabbitmq.Delivery) rabbitmq.Action {
 			Topic:   notifierRequest.PushSetting.To,
 			Message: notifierRequest.PushSetting.Message,
 			Title:   notifierRequest.PushSetting.Title,
+		}
+
+		if notifierRequest.WithTemplate() {
+			msg, err := h.parseTemplate(notifierRequest)
+			if err != nil {
+				//
+			}
+			notification.Message = msg
 		}
 
 		if notifierRequest.IsForAndroid() {
@@ -117,4 +136,18 @@ func (h *NotifierHandler) tryResend(req *notifier_dtos.NotifierReqDto) rabbitmq.
 	time.Sleep(time.Millisecond * 18)
 	fmt.Println("[NotifierHandler] execute task: ", time.Now().Sub(req.TimeReqStart).String(), reqRes)
 	return rabbitmq.Ack
+}
+
+func (h *NotifierHandler) parseTemplate(req *notifier_dtos.NotifierReqDto) (msg string, err error) {
+	tml, err := template.ParseFiles(req.EmailSetting.Template)
+	if err != nil {
+		return "", errors.New("[NotifierHandler] Cannot parse template")
+	}
+
+	buf := new(bytes.Buffer)
+	if err = tml.Execute(buf, req.Data); err != nil {
+		return "", errors.New("[NotifierHandler] Cannot parse template")
+	}
+
+	return buf.String(), nil
 }

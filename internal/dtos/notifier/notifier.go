@@ -14,22 +14,24 @@ type NotifierResendReqDto struct {
 type NotifierReqDto struct {
 	Type         string `json:"type"`
 	EmailSetting struct {
-		Email    string `json:"email"`
-		Subject  string `json:"subject"`
-		Template string `json:"template"`
-		Text     string `json:"text"`
+		Email    string      `json:"email"`
+		Subject  string      `json:"subject"`
+		Template string      `json:"template"`
+		Text     string      `json:"text"`
+		Data     interface{} `json:"data"`
 	} `json:"email_setting"`
 	PhoneSetting struct {
 		Number string `json:"number"`
 		Text   string `json:"text"`
 	} `json:"phone_setting"`
 	PushSetting struct {
-		To       string `json:"to"`
-		Platform string `json:"platform"`
-		Image    string `json:"image"`
-		Template string `json:"template"`
-		Title    string `json:"title"`
-		Message  string `json:"message"`
+		To       string      `json:"to"`
+		Platform string      `json:"platform"`
+		Image    string      `json:"image"`
+		Template string      `json:"template"`
+		Title    string      `json:"title"`
+		Message  string      `json:"message"`
+		Data     interface{} `json:"data"`
 	} `json:"push_settings"`
 	Data         interface{} `json:"data"`
 	Error        error       `json:"-"`
@@ -66,6 +68,13 @@ func (r *NotifierReqDto) IsForAndroid() bool {
 
 func (r *NotifierReqDto) IsForIOS() bool {
 	if r.Type == "push" && r.PushSetting.Platform == "IOS" {
+		return true
+	}
+	return false
+}
+
+func (r *NotifierReqDto) WithTemplate() bool {
+	if r.EmailSetting.Template != "" || r.PushSetting.Template != "" {
 		return true
 	}
 	return false

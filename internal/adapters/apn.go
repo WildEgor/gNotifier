@@ -75,9 +75,11 @@ func NewAPNAdapter(
 	var ext string
 	var client *apns2.Client
 
+	// Try read config file (cert)
 	if cfg.KeyPath != "" {
 		ext = filepath.Ext(cfg.KeyPath)
 
+		// Serve formats
 		switch ext {
 		case dotP12:
 			certificateKey, err = certificate.FromP12File(cfg.KeyPath, cfg.Password)
@@ -92,12 +94,17 @@ func NewAPNAdapter(
 		if err != nil {
 			log.Fatal("[APNAdapter] Cert Error:", err.Error())
 		}
+
+		// Else try parse base64 content
 	} else if cfg.KeyBase64 != "" {
 		ext = "." + cfg.KeyType
+
 		key, err := base64.StdEncoding.DecodeString(cfg.KeyBase64)
 		if err != nil {
-			log.Fatal("[APNAdapter] base64 decode error:", err.Error())
+			log.Fatal("[APNAdapter] Base64 decode error:", err.Error())
 		}
+
+		// Serve extension
 		switch ext {
 		case dotP12:
 			certificateKey, err = certificate.FromP12Bytes(key, cfg.Password)
@@ -114,10 +121,10 @@ func NewAPNAdapter(
 		}
 	}
 
+	// If provede .p8 cert
 	if ext == dotP8 {
 		if cfg.KeyID == "" || cfg.TeamID == "" {
-			msg := "[APNAdapter] You should provide KeyID and TeamID for p8 token"
-			log.Fatal(msg)
+			log.Fatal("[APNAdapter] You should provide KeyID from developer account (Certificates, Identifiers & Profiles -> Keys) and TeamID from developer account (View Account -> Membership) for p8 token")
 		}
 		token := &token.Token{
 			AuthKey: authKey,
@@ -127,17 +134,16 @@ func NewAPNAdapter(
 			TeamID: cfg.TeamID,
 		}
 
-		client, err = newApnsTokenClient(cfg, token)
+		// Build clien
+		client, err = buildApnsTokenClient(cfg, token)
 		if err != nil {
-			msg := "[APNAdapter] Failed when init new APNClient"
-			log.Fatal(msg, err)
+			log.Fatal("[APNAdapter] Failed when init new APNClient", err)
 		}
 
 	} else {
-		client, err = newApnsClient(cfg, certificateKey)
+		client, err = buildApnsClient(cfg, certificateKey)
 		if err != nil {
-			msg := "[APNAdapter] Failed when init new APNClient"
-			log.Fatal(msg, err)
+			log.Fatal("[APNAdapter] Failed when init new APNClient", err)
 		}
 	}
 
@@ -159,7 +165,7 @@ func NewAPNAdapter(
 	}
 }
 
-func newApnsClient(cfg *config.APNConfig, certificate tls.Certificate) (*apns2.Client, error) {
+func buildApnsClient(cfg *config.APNConfig, certificate tls.Certificate) (*apns2.Client, error) {
 	var client *apns2.Client
 
 	if cfg.Production {
@@ -195,7 +201,7 @@ func newApnsClient(cfg *config.APNConfig, certificate tls.Certificate) (*apns2.C
 	return client, nil
 }
 
-func newApnsTokenClient(cfg *config.APNConfig, token *token.Token) (*apns2.Client, error) {
+func buildApnsTokenClient(cfg *config.APNConfig, token *token.Token) (*apns2.Client, error) {
 	var client *apns2.Client
 
 	if cfg.Production {
@@ -227,7 +233,7 @@ func configureHTTP2ConnHealthCheck(h2Transport *http2.Transport) {
 	h2Transport.PingTimeout = 1 * time.Second
 }
 
-func iosAlertDictionary(notificationPayload *payload.Payload, req *domain.PushNotification) *payload.Payload {
+func convertToIOSDictionary(notificationPayload *payload.Payload, req *domain.PushNotification) *payload.Payload {
 	// Alert dictionary
 
 	if len(req.Title) > 0 {
@@ -378,7 +384,7 @@ func ConvertToIOSNotification(req *domain.PushNotification) *apns2.Notification 
 		payload.Custom(k, v)
 	}
 
-	payload = iosAlertDictionary(payload, req)
+	payload = convertToIOSDictionary(payload, req)
 
 	notification.Payload = payload
 
@@ -402,7 +408,7 @@ func (s *APNAdapter) getApnsClient(req *domain.PushNotification) (client *apns2.
 	return
 }
 
-// PushToIOS provide send notification to APNs server.
+// Send provide send notification to APNs server.
 func (s *APNAdapter) Send(req *domain.PushNotification) (err error) {
 	log.Debug("Start push notification for iOS")
 
@@ -415,12 +421,14 @@ func (s *APNAdapter) Send(req *domain.PushNotification) (err error) {
 		maxRetry = req.Retry
 	}
 
+	// TODO: refactor (dont use goto)
 Retry:
 	var newTokens []string
 
 	notification := ConvertToIOSNotification(req)
 	client := s.getApnsClient(req)
 
+	// Send notifications concurrently
 	var wg sync.WaitGroup
 	for _, token := range req.Tokens {
 		// occupy push slot
@@ -471,6 +479,7 @@ Retry:
 	return err
 }
 
+// TODO: send logs to storage
 func (s *APNAdapter) saveLogs(status, token string, req *domain.PushNotification, err error) error {
 	log.Error(map[string]interface{}{
 		"ID":       req.ID,

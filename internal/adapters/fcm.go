@@ -138,6 +138,7 @@ Retry:
 	return err
 }
 
+// TODO: save logs to storage
 func (f *FCMAdapter) saveLogs(status, token string, req *domain.PushNotification, err error) error {
 	log.Error(map[string]interface{}{
 		"ID":       req.ID,
