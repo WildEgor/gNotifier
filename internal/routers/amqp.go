@@ -55,7 +55,7 @@ func (r *AMQPRouter) SetupRoutes() error {
 	}
 	defer connection.Close()
 
-	consumer, err := rabbitmq.NewConsumer(
+	notifyConsumer, err := rabbitmq.NewConsumer(
 		connection,
 		r.notifierHandler.Handle,
 		"notifier-queue",
@@ -64,9 +64,9 @@ func (r *AMQPRouter) SetupRoutes() error {
 		rabbitmq.WithConsumerOptionsExchangeDeclare,
 	)
 	if err != nil {
-		log.Fatal("[AMQPRouter] Failed consume: ", err)
+		log.Fatal("[AMQPRouter] Failed notifyConsumer: ", err)
 	}
-	defer consumer.Close()
+	defer notifyConsumer.Close()
 
 	return nil
 }

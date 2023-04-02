@@ -16,8 +16,8 @@ type APNConfig struct {
 	Production bool   `env:"APN_PRODUCTION"`
 }
 
-func NewAPNConfig() *FCMConfig {
-	cfg := FCMConfig{}
+func NewAPNConfig() *APNConfig {
+	cfg := APNConfig{}
 
 	if err := godotenv.Load(".env", ".env.local"); err == nil {
 		if err := env.Parse(&cfg); err != nil {

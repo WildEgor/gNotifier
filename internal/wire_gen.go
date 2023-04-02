@@ -9,7 +9,8 @@ package app
 import (
 	"github.com/WildEgor/gNotifier/internal/adapters"
 	"github.com/WildEgor/gNotifier/internal/config"
-	"github.com/WildEgor/gNotifier/internal/handlers/amqp"
+	handlers2 "github.com/WildEgor/gNotifier/internal/handlers/amqp"
+	"github.com/WildEgor/gNotifier/internal/handlers/http"
 	"github.com/WildEgor/gNotifier/internal/routers"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/wire"
@@ -23,8 +24,10 @@ func NewServer() (*fiber.App, error) {
 	if err != nil {
 		return nil, err
 	}
-	httpRouter := routers.NewHTTPRouter(healthCheckAdapter)
-	notifierHandler := handlers.NewNotifierHandler()
+	storeTokenHandler := handlers.NewStoreTokenHandler()
+	unsubTokenHandler := handlers.NewUnsubTokenHandler()
+	httpRouter := routers.NewHTTPRouter(healthCheckAdapter, storeTokenHandler, unsubTokenHandler)
+	notifierHandler := handlers2.NewNotifierHandler()
 	amqpConfig := config.NewAMQPConfig()
 	amqpRouter := routers.NewAMQPRouter(notifierHandler, amqpConfig, healthCheckAdapter)
 	app := NewApp(appConfig, httpRouter, amqpRouter)
