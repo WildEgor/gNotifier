@@ -6,6 +6,8 @@ import (
 
 var AdaptersSet = wire.NewSet(
 	NewHealthCheckAdapter,
-	NewRabbitMQAdapter,
-	wire.Bind(new(IRabbitMQAdapter), new(*RabbitMQAdapter)),
+	NewFCMAdapter,
+	NewAPNAdapter,
+	NewSMSAdapter,
+	NewSMSAdapter,
 )

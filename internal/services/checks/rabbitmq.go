@@ -66,15 +66,10 @@ func NewRabbitMQCheck(cfg *RabbitMQCheckConfig) func(ctx context.Context) error 
 			rabbitmq.WithConnectionOptionsLogging,
 		)
 		if err != nil {
-			checkErr = fmt.Errorf("[RabbitMQCheck] Failed on connection: %w", err)
+			checkErr = fmt.Errorf("[RabbitMQCheck] Failed on connection: %w\n", err)
 			return
 		}
-		defer func() {
-			// override checkErr only if there were no other errors
-			if err := conn.Close(); err != nil && checkErr == nil {
-				checkErr = fmt.Errorf("[RabbitMQCheck] Failed to close connection: %w", err)
-			}
-		}()
+		defer conn.Close()
 
 		// HINT: Create publisher and consumer
 		publisher, err := rabbitmq.NewPublisher(
@@ -85,14 +80,14 @@ func NewRabbitMQCheck(cfg *RabbitMQCheckConfig) func(ctx context.Context) error 
 			rabbitmq.WithPublisherOptionsExchangeKind("topic"),
 		)
 		if err != nil {
-			checkErr = fmt.Errorf("[RabbitMQCheck] Failed on getting channel phase: %w", err)
+			checkErr = fmt.Errorf("[RabbitMQCheck] Failed on getting channel phase: %w\n", err)
 		}
 		defer publisher.Close()
 
 		consumer, err := rabbitmq.NewConsumer(
 			conn,
 			func(d rabbitmq.Delivery) (action rabbitmq.Action) {
-				fmt.Printf("[RabbitMQCheck] consumed: %v", string(d.Body))
+				fmt.Printf("[RabbitMQCheck] consumed: %v\n", string(d.Body))
 				return rabbitmq.Ack
 			},
 			cfg.Queue,
@@ -108,7 +103,7 @@ func NewRabbitMQCheck(cfg *RabbitMQCheckConfig) func(ctx context.Context) error 
 			}),
 		)
 		if err != nil {
-			checkErr = fmt.Errorf("[RabbitMQCheck] Failed consume: %w", err)
+			checkErr = fmt.Errorf("[RabbitMQCheck] Failed consume: %w\n", err)
 		}
 		defer consumer.Close()
 
@@ -120,7 +115,7 @@ func NewRabbitMQCheck(cfg *RabbitMQCheckConfig) func(ctx context.Context) error 
 			rabbitmq.WithPublishOptionsExchange(cfg.Exchange),
 		)
 		if err != nil {
-			checkErr = fmt.Errorf("[RabbitMQCheck] failed publish: %w", err)
+			checkErr = fmt.Errorf("[RabbitMQCheck] failed publish: %w\n", err)
 		}
 
 		return checkErr

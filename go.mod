@@ -9,9 +9,16 @@ require (
 )
 
 require (
+	github.com/appleboy/go-fcm v0.1.5 // indirect
+	github.com/golang-jwt/jwt/v4 v4.4.1 // indirect
+	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/rabbitmq/amqp091-go v1.8.0 // indirect
+	github.com/sideshow/apns2 v0.23.0 // indirect
 	github.com/streadway/amqp v1.0.0 // indirect
 	github.com/stretchr/testify v1.8.1 // indirect
+	golang.org/x/crypto v0.7.0 // indirect
+	golang.org/x/net v0.8.0 // indirect
+	golang.org/x/text v0.8.0 // indirect
 )
 
 require (

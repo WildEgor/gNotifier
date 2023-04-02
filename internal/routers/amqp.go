@@ -15,27 +15,22 @@ type AMQPRouter struct {
 	notifierHandler   *handlers.NotifierHandler
 	amqpConfig        *config.AMQPConfig
 	healtCheckAdapter *adapters.HealthCheckAdapter
-	amqpAdapter       adapters.IRabbitMQAdapter
-	consumers         map[string]rabbitmq.Consumer
-	connection        *rabbitmq.Conn
 }
 
 func NewAMQPRouter(
 	notifierHandler *handlers.NotifierHandler,
 	amqpConfig *config.AMQPConfig,
 	healtCheckAdapter *adapters.HealthCheckAdapter,
-	amqpAdapter adapters.IRabbitMQAdapter,
 ) *AMQPRouter {
 	return &AMQPRouter{
 		notifierHandler:   notifierHandler,
 		amqpConfig:        amqpConfig,
 		healtCheckAdapter: healtCheckAdapter,
-		amqpAdapter:       amqpAdapter,
-		consumers:         make(map[string]rabbitmq.Consumer),
 	}
 }
 
 func (r *AMQPRouter) SetupRoutes() error {
+	// Add health-check to global HealthCheckAdapter
 	r.healtCheckAdapter.Register(adapters.HealthConfig{
 		Name:      "amqp-health-check",
 		Timeout:   time.Duration(10 * time.Second),
@@ -51,16 +46,17 @@ func (r *AMQPRouter) SetupRoutes() error {
 	})
 
 	var err error
-	r.connection, err = rabbitmq.NewConn(
+	connection, err := rabbitmq.NewConn(
 		r.amqpConfig.URI,
 		rabbitmq.WithConnectionOptionsLogging,
 	)
 	if err != nil {
 		log.Fatal("[AMQPRouter] Failed to connect: ", err)
 	}
+	defer connection.Close()
 
 	consumer, err := rabbitmq.NewConsumer(
-		r.connection,
+		connection,
 		r.notifierHandler.Handle,
 		"notifier-queue",
 		rabbitmq.WithConsumerOptionsRoutingKey("notifier.send-notification"),
@@ -70,15 +66,7 @@ func (r *AMQPRouter) SetupRoutes() error {
 	if err != nil {
 		log.Fatal("[AMQPRouter] Failed consume: ", err)
 	}
-	r.consumers["notifier-queue::notifier.send-notification::notifications"] = *consumer
+	defer consumer.Close()
 
 	return nil
-}
-
-func (r *AMQPRouter) Close() {
-	log.Info("[AMQPRouter] Close connection...")
-	defer r.connection.Close()
-	for _, v := range r.consumers {
-		defer v.Close()
-	}
 }
