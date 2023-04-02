@@ -26,6 +26,7 @@ func NewSMSAdapter(
 	}
 }
 
+// HINT: implement own logic here, 'cause we use some own backend
 func (s *SMSAdapter) Send(req *domain.SMSNotification) (err error) {
 
 	err = domain.ValidateSMSNotification(req)

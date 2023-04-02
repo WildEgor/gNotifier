@@ -6,14 +6,21 @@ import (
 	"time"
 
 	notifier_dtos "github.com/WildEgor/gNotifier/internal/dtos/notifier"
+	models "github.com/WildEgor/gNotifier/internal/models"
+	mongo "github.com/WildEgor/gNotifier/internal/repository/mongo"
 	"github.com/gofiber/fiber/v2"
 )
 
 type StoreTokenHandler struct {
+	tokensRepo mongo.ITokensRepository
 }
 
-func NewStoreTokenHandler() *StoreTokenHandler {
-	return &StoreTokenHandler{}
+func NewStoreTokenHandler(
+	tokensRepo mongo.ITokensRepository,
+) *StoreTokenHandler {
+	return &StoreTokenHandler{
+		tokensRepo: tokensRepo,
+	}
 }
 
 // Store any ANDROID or IOS tokens (array of objects) with SubscriberID (could be unique userID for example)
@@ -25,8 +32,21 @@ func (h *StoreTokenHandler) Handle(ctx *fiber.Ctx) error {
 		//
 	}
 
-	// TODO: implement upsert logic to any storage (MongoDB, Radis, Postgres ...)
-	// Add new token to sub or update date if consume same token for sub
+	_, err := h.tokensRepo.UpsertToken(&models.SubTokenCreateModel{
+		SubID: req.SubscriberID,
+		Token: &models.TokenModel{
+			Token:    req.Token,
+			Platform: req.Platform,
+		},
+	})
+	if err != nil {
+		ctx.Status(400).JSON(fiber.Map{
+			"isOk": false,
+			"data": fiber.Map{
+				"message": "Cannot save token",
+			},
+		})
+	}
 
 	return nil
 }

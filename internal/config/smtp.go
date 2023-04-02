@@ -9,7 +9,7 @@ import (
 type SMTPConfig struct {
 	From     string `env:"SMTP_FROM_EMAIL"`
 	Host     string `env:"SMTP_HOST"`
-	Port     int8   `env:"SMTP_PORT"`
+	Port     int16  `env:"SMTP_PORT"`
 	Username string `env:"SMS_USERNAME"`
 	Password string `env:"SMS_PASSWORD"`
 }

@@ -2,10 +2,12 @@ package adapters
 
 import (
 	"fmt"
-	"net/smtp"
+	"strings"
 
 	"github.com/WildEgor/gNotifier/internal/config"
 	"github.com/WildEgor/gNotifier/internal/domain"
+	"github.com/emersion/go-sasl"
+	"github.com/emersion/go-smtp"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -33,19 +35,24 @@ func (s *SMTPAdapter) Send(req *domain.EmailNotification) (err error) {
 		return
 	}
 
-	auth := smtp.PlainAuth("", s.config.Username, s.config.Password, s.config.Host)
 	address := fmt.Sprintf("%v:%v", s.config.Host, s.config.Port)
+	auth := sasl.NewPlainClient("", s.config.Username, s.config.Password)
 
-	err = smtp.SendMail(
-		address,
-		auth,
-		s.config.From,
-		[]string{req.Email},
-		[]byte(req.Message),
+	to := []string{req.Email}
+	msg := strings.NewReader(
+		"To: " +
+			req.Email +
+			"\r\n" +
+			"Subject: " +
+			req.Subject +
+			"\r\n" +
+			req.Message +
+			"\r\n",
 	)
+
+	err = smtp.SendMail(address, auth, s.config.From, to, msg)
 	if err != nil {
-		log.Println("[SMTPAdapter] Cannot send message: " + err.Error())
-		return err
+		log.Fatal(err)
 	}
 
 	return nil

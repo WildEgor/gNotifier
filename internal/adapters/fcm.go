@@ -3,6 +3,7 @@ package adapters
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -25,7 +26,7 @@ func NewFCMAdapter(
 	c *config.FCMConfig,
 ) *FCMAdapter {
 
-	FCMClient, err := fcm.NewClient(c.APIKey)
+	FCMClient, err := fcm.NewClient(c.APIKey, fcm.WithTimeout(time.Second*5))
 	if err != nil {
 		log.Fatalf("[FCMAdapter] Cannot init FCM client: %v", err)
 	}
@@ -137,6 +138,7 @@ Retry:
 	return err
 }
 
+// TODO: save logs to storage
 func (f *FCMAdapter) saveLogs(status, token string, req *domain.PushNotification, err error) error {
 	log.Error(map[string]interface{}{
 		"ID":       req.ID,
