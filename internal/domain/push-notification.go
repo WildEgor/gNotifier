@@ -97,8 +97,8 @@ func (p *PushNotification) IsTopic() bool {
 }
 
 // Static method
-// ValidateNotification for check request message
-func ValidateNotification(d *PushNotification) error {
+// ValidatePushNotification for check request message
+func ValidatePushNotification(d *PushNotification) error {
 	var msg string
 
 	// ignore send topic mesaage from FCM

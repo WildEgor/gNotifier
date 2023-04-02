@@ -49,7 +49,7 @@ func (f *FCMAdapter) Send(req *domain.PushNotification) (err error) {
 	}
 
 	// Validate notification data
-	err = domain.ValidateNotification(req)
+	err = domain.ValidatePushNotification(req)
 	if err != nil {
 		log.Println("[FCMAdapter] Not valid push notification: " + err.Error())
 		return

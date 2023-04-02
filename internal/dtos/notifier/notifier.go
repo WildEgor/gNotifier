@@ -25,6 +25,7 @@ type NotifierReqDto struct {
 	} `json:"phone_setting"`
 	PushSetting struct {
 		To       string `json:"to"`
+		Platform string `json:"platform"`
 		Image    string `json:"image"`
 		Template string `json:"template"`
 		Title    string `json:"title"`
@@ -51,6 +52,20 @@ func (r *NotifierReqDto) IsEmail() bool {
 
 func (r *NotifierReqDto) IsPush() bool {
 	if r.Type == "push" {
+		return true
+	}
+	return false
+}
+
+func (r *NotifierReqDto) IsForAndroid() bool {
+	if r.Type == "push" && r.PushSetting.Platform == "ANDROID" {
+		return true
+	}
+	return false
+}
+
+func (r *NotifierReqDto) IsForIOS() bool {
+	if r.Type == "push" && r.PushSetting.Platform == "IOS" {
 		return true
 	}
 	return false

@@ -7,4 +7,6 @@ var ConfigSet = wire.NewSet(
 	NewAMQPConfig,
 	NewFCMConfig,
 	NewAPNConfig,
+	NewSMSConfig,
+	NewSMTPConfig,
 )
