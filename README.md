@@ -7,6 +7,18 @@ Go notifier microservice (sms, smtp or push notifications). Expose API via amqp 
 - Send push (FCM or APN);
 - Sub/unsub push tokens to own unique ID.
 
+# Developing:
+Hot reload mode
+```
+go install github.com/cosmtrek/air@latest
+
+air -v
+
+air server --port 8080
+
+air -d
+```
+
 ## Usage
 
 ```bash

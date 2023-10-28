@@ -7,9 +7,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: production
+      target: dev
     environment:
-      DEBUG: "false"
+      DEBUG: "true"
       APP_PORT: "8888"
     volumes:
       - .:/app
