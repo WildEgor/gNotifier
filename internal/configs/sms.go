@@ -1,8 +1,7 @@
-package config
+package configs
 
 import (
 	"github.com/caarlos0/env/v7"
-	"github.com/joho/godotenv"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -12,10 +11,10 @@ type SMSConfig struct {
 	Password string `env:"SMS_PASSWORD"`
 }
 
-func NewSMSConfig() *SMSConfig {
+func NewSMSConfig(c *Configurator) *SMSConfig {
 	cfg := SMSConfig{}
 
-	if err := godotenv.Load(".env", ".env.local"); err == nil {
+	if err := c.Load(); err == nil {
 		if err := env.Parse(&cfg); err != nil {
 			log.Printf("[SMSConfig] %+v\n", err)
 		}

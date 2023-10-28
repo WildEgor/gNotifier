@@ -77,7 +77,7 @@ type PushNotification struct {
 	InterruptionLevel string `json:"interruption_level,omitempty"`
 }
 
-// Bytes for queue message
+// ToBytes Bytes for queue message
 func (p *PushNotification) ToBytes() []byte {
 	b, err := json.Marshal(p)
 	if err != nil {
@@ -96,7 +96,7 @@ func (p *PushNotification) IsTopic() bool {
 	return false
 }
 
-// Static method
+// ValidatePushNotification Static method
 // ValidatePushNotification for check request message
 func ValidatePushNotification(d *PushNotification) error {
 	var msg string

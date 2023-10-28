@@ -4,8 +4,10 @@
 root = "."
 tmp_dir = "tmp"
 [build]
+# Array of commands to run before each build
+# pre_cmd = ["bash build.sh"]
 # Just plain old shell command. You could use `make` as well.
-cmd = "go build -o dist/app.exe cmd/main.go"
+cmd = "cmd build.sh && go build -o dist/app.exe cmd/main.go"
 # Binary file yields from `cmd`.
 bin = "tmp/main"
 # Customize binary.
@@ -40,3 +42,6 @@ runner = "green"
 [misc]
 # Delete tmp directory on exit
 clean_on_exit = true
+[screen]
+clear_on_rebuild = true
+keep_scroll = true

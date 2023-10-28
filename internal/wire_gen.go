@@ -8,7 +8,7 @@ package app
 
 import (
 	"github.com/WildEgor/gNotifier/internal/adapters"
-	"github.com/WildEgor/gNotifier/internal/config"
+	"github.com/WildEgor/gNotifier/internal/configs"
 	handlers2 "github.com/WildEgor/gNotifier/internal/handlers/amqp"
 	"github.com/WildEgor/gNotifier/internal/handlers/http"
 	"github.com/WildEgor/gNotifier/internal/repository/mongo"
@@ -20,12 +20,13 @@ import (
 // Injectors from server.go:
 
 func NewServer() (*fiber.App, error) {
-	appConfig := config.NewAppConfig()
+	configurator := configs.NewConfigurator()
+	appConfig := configs.NewAppConfig(configurator)
 	healthCheckAdapter, err := adapters.NewHealthCheckAdapter()
 	if err != nil {
 		return nil, err
 	}
-	mongoConfig := config.NewMongoConfig()
+	mongoConfig := configs.NewMongoConfig(configurator)
 	client, err := mongo.NewMongoClient(mongoConfig)
 	if err != nil {
 		return nil, err
@@ -38,16 +39,16 @@ func NewServer() (*fiber.App, error) {
 	storeTokenHandler := handlers.NewStoreTokenHandler(tokensRepository)
 	unsubTokenHandler := handlers.NewUnsubTokenHandler()
 	httpRouter := routers.NewHTTPRouter(healthCheckAdapter, storeTokenHandler, unsubTokenHandler)
-	smtpConfig := config.NewSMTPConfig()
+	smtpConfig := configs.NewSMTPConfig(configurator)
 	smtpAdapter := adapters.NewSMTPAdapter(smtpConfig)
-	smsConfig := config.NewSMSConfig()
+	smsConfig := configs.NewSMSConfig(configurator)
 	smsAdapter := adapters.NewSMSAdapter(smsConfig)
-	fcmConfig := config.NewFCMConfig()
+	fcmConfig := configs.NewFCMConfig(configurator)
 	fcmAdapter := adapters.NewFCMAdapter(fcmConfig)
-	apnConfig := config.NewAPNConfig()
+	apnConfig := configs.NewAPNConfig(configurator)
 	apnAdapter := adapters.NewAPNAdapter(apnConfig)
 	notifierHandler := handlers2.NewNotifierHandler(smtpAdapter, smsAdapter, fcmAdapter, apnAdapter)
-	amqpConfig := config.NewAMQPConfig()
+	amqpConfig := configs.NewAMQPConfig(configurator)
 	amqpRouter := routers.NewAMQPRouter(notifierHandler, amqpConfig, healthCheckAdapter)
 	app := NewApp(appConfig, httpRouter, amqpRouter)
 	return app, nil

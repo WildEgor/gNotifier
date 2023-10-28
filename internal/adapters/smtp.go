@@ -2,9 +2,9 @@ package adapters
 
 import (
 	"fmt"
+	"github.com/WildEgor/gNotifier/internal/configs"
 	"strings"
 
-	"github.com/WildEgor/gNotifier/internal/config"
 	"github.com/WildEgor/gNotifier/internal/domain"
 	"github.com/emersion/go-sasl"
 	"github.com/emersion/go-smtp"
@@ -16,11 +16,11 @@ type ISMTPAdapter interface {
 }
 
 type SMTPAdapter struct {
-	config *config.SMTPConfig
+	config *configs.SMTPConfig
 }
 
 func NewSMTPAdapter(
-	config *config.SMTPConfig,
+	config *configs.SMTPConfig,
 ) *SMTPAdapter {
 	return &SMTPAdapter{
 		config: config,

@@ -3,11 +3,11 @@ package adapters
 import (
 	"errors"
 	"fmt"
+	"github.com/WildEgor/gNotifier/internal/configs"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/WildEgor/gNotifier/internal/config"
 	"github.com/WildEgor/gNotifier/internal/domain"
 	"github.com/appleboy/go-fcm"
 )
@@ -18,12 +18,12 @@ type IFCMAdapter interface {
 
 type FCMAdapter struct {
 	client *fcm.Client
-	config *config.FCMConfig
+	config *configs.FCMConfig
 }
 
 // Create new FCM Client
 func NewFCMAdapter(
-	c *config.FCMConfig,
+	c *configs.FCMConfig,
 ) *FCMAdapter {
 
 	FCMClient, err := fcm.NewClient(c.APIKey, fcm.WithTimeout(time.Second*5))

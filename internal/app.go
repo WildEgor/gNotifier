@@ -2,9 +2,9 @@ package app
 
 import (
 	"fmt"
+	"github.com/WildEgor/gNotifier/internal/configs"
 
 	"github.com/WildEgor/gNotifier/internal/adapters"
-	"github.com/WildEgor/gNotifier/internal/config"
 	handlers_http "github.com/WildEgor/gNotifier/internal/handlers/http"
 	"github.com/WildEgor/gNotifier/internal/repository"
 	"github.com/WildEgor/gNotifier/internal/routers"
@@ -19,12 +19,12 @@ var AppSet = wire.NewSet(
 	NewApp,
 	adapters.AdaptersSet,
 	repository.RepositoriesSet,
-	config.ConfigSet,
+	configs.ConfigSet,
 	routers.RoutersSet,
 )
 
 func NewApp(
-	appConfig *config.AppConfig,
+	appConfig *configs.AppConfig,
 	httpRouter *routers.HTTPRouter,
 	amqpRouter *routers.AMQPRouter,
 ) *fiber.App {

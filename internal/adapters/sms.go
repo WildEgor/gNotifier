@@ -2,10 +2,10 @@ package adapters
 
 import (
 	"fmt"
+	"github.com/WildEgor/gNotifier/internal/configs"
 	"net/http"
 	"net/url"
 
-	"github.com/WildEgor/gNotifier/internal/config"
 	"github.com/WildEgor/gNotifier/internal/domain"
 	log "github.com/sirupsen/logrus"
 )
@@ -15,11 +15,11 @@ type ISMSAdapter interface {
 }
 
 type SMSAdapter struct {
-	config *config.SMSConfig
+	config *configs.SMSConfig
 }
 
 func NewSMSAdapter(
-	config *config.SMSConfig,
+	config *configs.SMSConfig,
 ) *SMSAdapter {
 	return &SMSAdapter{
 		config: config,

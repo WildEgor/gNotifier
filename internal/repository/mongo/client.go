@@ -1,13 +1,13 @@
 package mongo
 
 import (
-	"github.com/WildEgor/gNotifier/internal/config"
+	"github.com/WildEgor/gNotifier/internal/configs"
 	mongo "go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func NewMongoClient(
-	cfg *config.MongoConfig,
+	cfg *configs.MongoConfig,
 ) (*mongo.Client, error) {
 	opts := options.Client()
 	opts.Hosts = append(opts.Hosts, cfg.GetHost())

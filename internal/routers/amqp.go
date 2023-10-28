@@ -1,10 +1,10 @@
 package routers
 
 import (
+	"github.com/WildEgor/gNotifier/internal/configs"
 	"time"
 
 	"github.com/WildEgor/gNotifier/internal/adapters"
-	"github.com/WildEgor/gNotifier/internal/config"
 	handlers "github.com/WildEgor/gNotifier/internal/handlers/amqp"
 	"github.com/WildEgor/gNotifier/internal/services/checks"
 	log "github.com/sirupsen/logrus"
@@ -13,13 +13,13 @@ import (
 
 type AMQPRouter struct {
 	notifierHandler   *handlers.NotifierHandler
-	amqpConfig        *config.AMQPConfig
+	amqpConfig        *configs.AMQPConfig
 	healtCheckAdapter *adapters.HealthCheckAdapter
 }
 
 func NewAMQPRouter(
 	notifierHandler *handlers.NotifierHandler,
-	amqpConfig *config.AMQPConfig,
+	amqpConfig *configs.AMQPConfig,
 	healtCheckAdapter *adapters.HealthCheckAdapter,
 ) *AMQPRouter {
 	return &AMQPRouter{

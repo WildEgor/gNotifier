@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"errors"
+	"github.com/WildEgor/gNotifier/internal/configs"
 	"net"
 	"net/http"
 	"path/filepath"
@@ -20,7 +21,6 @@ import (
 	"github.com/sideshow/apns2/token"
 	"golang.org/x/net/http2"
 
-	"github.com/WildEgor/gNotifier/internal/config"
 	"github.com/WildEgor/gNotifier/internal/domain"
 )
 
@@ -63,11 +63,11 @@ type IAPNAdapter interface {
 
 type APNAdapter struct {
 	client *apns2.Client
-	config *config.APNConfig
+	config *configs.APNConfig
 }
 
 func NewAPNAdapter(
-	cfg *config.APNConfig,
+	cfg *configs.APNConfig,
 ) *APNAdapter {
 	var err error
 	var authKey *ecdsa.PrivateKey
@@ -165,7 +165,7 @@ func NewAPNAdapter(
 	}
 }
 
-func buildApnsClient(cfg *config.APNConfig, certificate tls.Certificate) (*apns2.Client, error) {
+func buildApnsClient(cfg *configs.APNConfig, certificate tls.Certificate) (*apns2.Client, error) {
 	var client *apns2.Client
 
 	if cfg.Production {
@@ -201,7 +201,7 @@ func buildApnsClient(cfg *config.APNConfig, certificate tls.Certificate) (*apns2
 	return client, nil
 }
 
-func buildApnsTokenClient(cfg *config.APNConfig, token *token.Token) (*apns2.Client, error) {
+func buildApnsTokenClient(cfg *configs.APNConfig, token *token.Token) (*apns2.Client, error) {
 	var client *apns2.Client
 
 	if cfg.Production {
