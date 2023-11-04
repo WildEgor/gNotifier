@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"html/template"
 	"time"
 
@@ -126,11 +125,17 @@ func (h *NotifierHandler) parse(b []byte) *notifierDtos.NotifierPayloadDto {
 		req.Error = err
 	}
 
+	req.ValidateType()
+
+	if req.IsSms() {
+		req.ValidateSms()
+	}
+
 	return &req
 }
 
 func (h *NotifierHandler) tryResend(req *notifierDtos.NotifierPayloadDto) rabbitmq.Action {
-	fmt.Printf("[NotifierHandler] Error: %v\n", req.Error)
+	log.Error("[NotifierHandler] Error: %v\n", req.Error)
 	reqRes := notifierDtos.NotifierResendRequestDto{
 		Req:     *req,
 		Error:   req.Error.Error(),
@@ -139,18 +144,20 @@ func (h *NotifierHandler) tryResend(req *notifierDtos.NotifierPayloadDto) rabbit
 	// TODO: resend to error queue
 
 	time.Sleep(time.Millisecond * 18)
-	fmt.Println("[NotifierHandler] execute task: ", time.Now().Sub(req.TimeReqStart).String(), reqRes)
+	log.Debug("[NotifierHandler] execute task: ", time.Now().Sub(req.TimeReqStart).String(), reqRes)
 	return rabbitmq.Ack
 }
 
 func (h *NotifierHandler) parseTemplate(req *notifierDtos.NotifierPayloadDto) (msg string, err error) {
 	tml, err := template.ParseFiles(req.EmailSetting.Template)
 	if err != nil {
+		req.Error = err
 		return "", errors.New("[NotifierHandler] Cannot parse template")
 	}
 
 	buf := new(bytes.Buffer)
 	if err = tml.Execute(buf, req.Data); err != nil {
+		req.Error = err
 		return "", errors.New("[NotifierHandler] Cannot parse template")
 	}
 

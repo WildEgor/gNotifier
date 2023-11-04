@@ -1,6 +1,29 @@
 version: "3.7"
 
+volumes:
+  rabbitmq_data:
+  rabbitmq_logs:
+  mongodb_data:
+
 services:
+  rabbitmq:
+    hostname: rabbitmq
+    image: rabbitmq:3-management-alpine
+    container_name: "rabbitmq"
+    restart: unless-stopped
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq/
+      - rabbitmq_logs:/var/log/rabbitmq
+
+  mongodb:
+    image: mongo
+    hostname: mongodb
+    restart: unless-stopped
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: echo 'db.stats().ok' | mongosh localhost:27017/test --quiet
+
   notifier:
     hostname: notifier
     restart: unless-stopped

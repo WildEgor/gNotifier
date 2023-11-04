@@ -21,7 +21,7 @@ type NotifierPayloadDto struct {
 		Data     interface{} `json:"data,omitempty"`
 	} `json:"email_setting,omitempty"`
 	PhoneSetting struct {
-		Number string `json:"number"`
+		Number string `json:"phone"`
 		Text   string `json:"text"`
 	} `json:"phone_setting,omitempty"`
 	PushSetting struct {

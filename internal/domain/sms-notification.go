@@ -2,7 +2,7 @@ package domain
 
 import (
 	"errors"
-	"regexp"
+	"strconv"
 )
 
 type SMSNotification struct {
@@ -18,10 +18,13 @@ func ValidateSMSNotification(d *SMSNotification) error {
 		return errors.New(msg)
 	}
 
-	re := regexp.MustCompile(`(?:^|[^0-9])(1[34578][0-9]{9})(?:$|[^0-9])`)
-	submatch := re.FindStringSubmatch(d.Phone)
-	if len(submatch) < 2 {
-		msg = "[SMSNotification] Phone number incorrect format"
+	if len(d.Phone) != 11 {
+		msg = "[SMSNotification] Phone number must 11 digits"
+		return errors.New(msg)
+	}
+
+	if _, err := strconv.ParseInt(d.Phone, 10, 64); err != nil {
+		msg = "[SMSNotification] Parse error"
 		return errors.New(msg)
 	}
 

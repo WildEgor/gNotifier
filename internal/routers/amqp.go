@@ -15,6 +15,9 @@ type AMQPRouter struct {
 	notifierHandler    *handlers.NotifierHandler
 	amqpConfig         *configs.AMQPConfig
 	healthCheckAdapter *adapters.HealthCheckAdapter
+
+	connection       *rabbitmq.Conn
+	notifierConsumer *rabbitmq.Consumer
 }
 
 func NewAMQPRouter(
@@ -55,9 +58,9 @@ func (r *AMQPRouter) SetupRoutes() error {
 	if err != nil {
 		log.Fatal("[AMQPRouter] Failed to connect: ", err)
 	}
-	defer connection.Close()
+	r.connection = connection
 
-	notifyConsumer, err := rabbitmq.NewConsumer(
+	notifierConsumer, err := rabbitmq.NewConsumer(
 		connection,
 		r.notifierHandler.Handle,
 		"notifier-queue",
@@ -68,7 +71,13 @@ func (r *AMQPRouter) SetupRoutes() error {
 	if err != nil {
 		log.Fatal("[AMQPRouter] Failed notifyConsumer: ", err)
 	}
-	defer notifyConsumer.Close()
+
+	r.notifierConsumer = notifierConsumer
 
 	return nil
+}
+
+func (r *AMQPRouter) Close() {
+	defer r.connection.Close()
+	defer r.notifierConsumer.Close()
 }

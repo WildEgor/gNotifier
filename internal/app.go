@@ -49,7 +49,7 @@ func NewApp(
 	httpRouter.SetupRoutes(app)
 	amqpRouter.SetupRoutes()
 
-	// defer amqpRouter.Close()
+	defer amqpRouter.Close()
 
 	log.Info(fmt.Sprintf("Application is running on %v port...", appConfig.Port))
 
