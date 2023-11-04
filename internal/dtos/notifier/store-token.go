@@ -11,8 +11,5 @@ type StoreTokenReqDto struct {
 }
 
 func (r *StoreTokenReqDto) HasError() bool {
-	if r.Error != nil {
-		return true
-	}
-	return false
+	return r.Error != nil
 }

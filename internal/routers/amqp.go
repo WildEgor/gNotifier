@@ -12,41 +12,43 @@ import (
 )
 
 type AMQPRouter struct {
-	notifierHandler   *handlers.NotifierHandler
-	amqpConfig        *configs.AMQPConfig
-	healtCheckAdapter *adapters.HealthCheckAdapter
+	notifierHandler    *handlers.NotifierHandler
+	amqpConfig         *configs.AMQPConfig
+	healthCheckAdapter *adapters.HealthCheckAdapter
 }
 
 func NewAMQPRouter(
 	notifierHandler *handlers.NotifierHandler,
 	amqpConfig *configs.AMQPConfig,
-	healtCheckAdapter *adapters.HealthCheckAdapter,
+	healthCheckAdapter *adapters.HealthCheckAdapter,
 ) *AMQPRouter {
 	return &AMQPRouter{
-		notifierHandler:   notifierHandler,
-		amqpConfig:        amqpConfig,
-		healtCheckAdapter: healtCheckAdapter,
+		notifierHandler:    notifierHandler,
+		amqpConfig:         amqpConfig,
+		healthCheckAdapter: healthCheckAdapter,
 	}
 }
 
 func (r *AMQPRouter) SetupRoutes() error {
 	// Add health-check to global HealthCheckAdapter
-	r.healtCheckAdapter.Register(adapters.HealthConfig{
+	er := r.healthCheckAdapter.Register(adapters.HealthConfig{
 		Name:      "amqp-health-check",
-		Timeout:   time.Duration(10 * time.Second),
+		Timeout:   10 * time.Second,
 		SkipOnErr: false,
 		Check: checks.NewRabbitMQCheck(&checks.RabbitMQCheckConfig{
 			URI:            r.amqpConfig.URI,
-			DialTimeout:    time.Duration(5 * time.Second),
+			DialTimeout:    5 * time.Second,
 			Exchange:       "health-check",
 			Queue:          "health-queue",
 			RoutingKey:     "health-check",
-			ConsumeTimeout: time.Duration(5 * time.Second),
+			ConsumeTimeout: 5 * time.Second,
 		}),
 	})
+	if er != nil {
+		return er
+	}
 
-	var err error
-	connection, err := rabbitmq.NewConn(
+	var connection, err = rabbitmq.NewConn(
 		r.amqpConfig.URI,
 		rabbitmq.WithConnectionOptionsLogging,
 	)

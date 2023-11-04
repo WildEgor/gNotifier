@@ -58,7 +58,7 @@ type Sound struct {
 }
 
 type IAPNAdapter interface {
-	Send(req *domain.PushNotification) error
+	Send(domain *domain.PushNotification) error
 }
 
 type APNAdapter struct {
@@ -67,7 +67,7 @@ type APNAdapter struct {
 }
 
 func NewAPNAdapter(
-	cfg *configs.APNConfig,
+	config *configs.APNConfig,
 ) *APNAdapter {
 	var err error
 	var authKey *ecdsa.PrivateKey
@@ -76,73 +76,73 @@ func NewAPNAdapter(
 	var client *apns2.Client
 
 	// Try read config file (cert)
-	if cfg.KeyPath != "" {
-		ext = filepath.Ext(cfg.KeyPath)
+	if config.KeyPath != "" {
+		ext = filepath.Ext(config.KeyPath)
 
 		// Serve formats
 		switch ext {
 		case dotP12:
-			certificateKey, err = certificate.FromP12File(cfg.KeyPath, cfg.Password)
+			certificateKey, err = certificate.FromP12File(config.KeyPath, config.Password)
 		case dotPEM:
-			certificateKey, err = certificate.FromPemFile(cfg.KeyPath, cfg.Password)
+			certificateKey, err = certificate.FromPemFile(config.KeyPath, config.Password)
 		case dotP8:
-			authKey, err = token.AuthKeyFromFile(cfg.KeyPath)
+			authKey, err = token.AuthKeyFromFile(config.KeyPath)
 		default:
 			err = errors.New("[APNAdapter] Wrong certificate key extension")
 		}
 
-		if err != nil {
+		if err != nil && config.Production {
 			log.Fatal("[APNAdapter] Cert Error:", err.Error())
 		}
 
 		// Else try parse base64 content
-	} else if cfg.KeyBase64 != "" {
-		ext = "." + cfg.KeyType
+	} else if config.KeyBase64 != "" {
+		ext = "." + config.KeyType
 
-		key, err := base64.StdEncoding.DecodeString(cfg.KeyBase64)
-		if err != nil {
+		key, err := base64.StdEncoding.DecodeString(config.KeyBase64)
+		if err != nil && config.Production {
 			log.Fatal("[APNAdapter] Base64 decode error:", err.Error())
 		}
 
 		// Serve extension
 		switch ext {
 		case dotP12:
-			certificateKey, err = certificate.FromP12Bytes(key, cfg.Password)
+			certificateKey, err = certificate.FromP12Bytes(key, config.Password)
 		case dotPEM:
-			certificateKey, err = certificate.FromPemBytes(key, cfg.Password)
+			certificateKey, err = certificate.FromPemBytes(key, config.Password)
 		case dotP8:
 			authKey, err = token.AuthKeyFromBytes(key)
 		default:
 			err = errors.New("[APNAdapter] Wrong certificate key type")
 		}
 
-		if err != nil {
+		if err != nil && config.Production {
 			log.Fatal("Cert Error:", err.Error())
 		}
 	}
 
 	// If provede .p8 cert
 	if ext == dotP8 {
-		if cfg.KeyID == "" || cfg.TeamID == "" {
+		if config.KeyID == "" || config.TeamID == "" {
 			log.Fatal("[APNAdapter] You should provide KeyID from developer account (Certificates, Identifiers & Profiles -> Keys) and TeamID from developer account (View Account -> Membership) for p8 token")
 		}
 		token := &token.Token{
 			AuthKey: authKey,
 			// KeyID from developer account (Certificates, Identifiers & Profiles -> Keys)
-			KeyID: cfg.KeyID,
+			KeyID: config.KeyID,
 			// TeamID from developer account (View Account -> Membership)
-			TeamID: cfg.TeamID,
+			TeamID: config.TeamID,
 		}
 
 		// Build clien
-		client, err = buildApnsTokenClient(cfg, token)
-		if err != nil {
+		client, err = buildApnsTokenClient(config, token)
+		if err != nil && config.Production {
 			log.Fatal("[APNAdapter] Failed when init new APNClient", err)
 		}
 
 	} else {
-		client, err = buildApnsClient(cfg, certificateKey)
-		if err != nil {
+		client, err = buildApnsClient(config, certificateKey)
+		if err != nil && config.Production {
 			log.Fatal("[APNAdapter] Failed when init new APNClient", err)
 		}
 	}
@@ -151,17 +151,17 @@ func NewAPNAdapter(
 		configureHTTP2ConnHealthCheck(h2Transport)
 	}
 
-	if err != nil {
+	if err != nil && config.Production {
 		log.Fatal("[APNAdapter] Transport Error:", err.Error())
 	}
 
 	doOnce.Do(func() {
-		maxConcurrentIOSPushes = make(chan struct{}, 5)
+		maxConcurrentIOSPushes = make(chan struct{}, 5) // WARN!
 	})
 
 	return &APNAdapter{
 		client: client,
-		config: cfg,
+		config: config,
 	}
 }
 
@@ -405,7 +405,7 @@ func (s *APNAdapter) getApnsClient(req *domain.PushNotification) (client *apns2.
 		}
 	}
 
-	return
+	return client
 }
 
 // Send provide send notification to APNs server.
@@ -421,14 +421,18 @@ func (s *APNAdapter) Send(req *domain.PushNotification) (err error) {
 		maxRetry = req.Retry
 	}
 
-	// TODO: refactor (dont use goto)
-Retry:
+	s.retry(req, retryCount)
+
+	return err
+}
+
+func (s *APNAdapter) retry(req *domain.PushNotification, retryCount int) int {
 	var newTokens []string
+	var maxRetry = 5
 
 	notification := ConvertToIOSNotification(req)
 	client := s.getApnsClient(req)
 
-	// Send notifications concurrently
 	var wg sync.WaitGroup
 	for _, token := range req.Tokens {
 		// occupy push slot
@@ -439,7 +443,7 @@ Retry:
 
 			// send ios notification
 			res, err := client.Push(&notification)
-			if err != nil || (res != nil && res.StatusCode != http.StatusOK) {
+			if err != nil || (res != nil && !res.Sent()) {
 				if err == nil {
 					// error message:
 					// ref: https://github.com/sideshow/apns2/blob/master/response.go#L14-L65
@@ -473,10 +477,10 @@ Retry:
 
 		// resend fail token
 		req.Tokens = newTokens
-		goto Retry
+		s.retry(req, retryCount)
 	}
 
-	return err
+	return retryCount
 }
 
 // TODO: send logs to storage

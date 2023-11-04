@@ -2,12 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
+	log "github.com/sirupsen/logrus"
 	"time"
 
-	notifier_dtos "github.com/WildEgor/gNotifier/internal/dtos/notifier"
-	models "github.com/WildEgor/gNotifier/internal/models"
-	mongo "github.com/WildEgor/gNotifier/internal/repository/mongo"
+	dtos "github.com/WildEgor/gNotifier/internal/dtos/notifier"
+	"github.com/WildEgor/gNotifier/internal/models"
+	"github.com/WildEgor/gNotifier/internal/repository/mongo"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -23,13 +23,19 @@ func NewStoreTokenHandler(
 	}
 }
 
-// Store any ANDROID or IOS tokens (array of objects) with SubscriberID (could be unique userID for example)
+// Handle Store any ANDROID or IOS tokens (array of objects) with SubscriberID (could be unique userID for example)
 func (h *StoreTokenHandler) Handle(ctx *fiber.Ctx) error {
-	fmt.Printf("[StoreTokenHandler] consumed: %v\n", string(ctx.Body()))
+	log.Debug("[StoreTokenHandler] consumed: %v\n", string(ctx.Body()))
 
 	req := h.parseReq(ctx.Body())
 	if req.HasError() {
-		//
+		log.Error("[StoreTokenHandler] error: ", req.Error.Error())
+		ctx.Status(400).JSON(fiber.Map{
+			"isOk": false,
+			"data": fiber.Map{
+				"message": "Validation error",
+			},
+		})
 	}
 
 	_, err := h.tokensRepo.UpsertToken(&models.SubTokenCreateModel{
@@ -39,7 +45,9 @@ func (h *StoreTokenHandler) Handle(ctx *fiber.Ctx) error {
 			Platform: req.Platform,
 		},
 	})
+
 	if err != nil {
+		log.Error("[StoreTokenHandler] error: ", err.Error())
 		ctx.Status(400).JSON(fiber.Map{
 			"isOk": false,
 			"data": fiber.Map{
@@ -51,8 +59,8 @@ func (h *StoreTokenHandler) Handle(ctx *fiber.Ctx) error {
 	return nil
 }
 
-func (h *StoreTokenHandler) parseReq(b []byte) *notifier_dtos.StoreTokenReqDto {
-	req := notifier_dtos.StoreTokenReqDto{
+func (h *StoreTokenHandler) parseReq(b []byte) *dtos.StoreTokenReqDto {
+	req := dtos.StoreTokenReqDto{
 		TimeReqStart: time.Now(),
 	}
 	if err := json.Unmarshal(b, &req); err != nil {

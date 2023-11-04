@@ -10,7 +10,7 @@ import (
 
 	"github.com/WildEgor/gNotifier/internal/adapters"
 	"github.com/WildEgor/gNotifier/internal/domain"
-	notifier_dtos "github.com/WildEgor/gNotifier/internal/dtos/notifier"
+	notifierDtos "github.com/WildEgor/gNotifier/internal/dtos/notifier"
 	log "github.com/sirupsen/logrus"
 	"github.com/wagslane/go-rabbitmq"
 )
@@ -37,13 +37,15 @@ func NewNotifierHandler(
 }
 
 func (h *NotifierHandler) Handle(d rabbitmq.Delivery) rabbitmq.Action {
-	notifierRequest := h.parseReq(d.Body)
+	notifierRequest := h.parse(d.Body)
 	if notifierRequest.HasError() {
+		log.Error("[NotifierHandler] error: ", notifierRequest.Error.Error())
 		return h.tryResend(notifierRequest)
 	}
 
-	fmt.Printf("[NotifierHandler] consumed: %v\n", notifierRequest)
+	log.Debug("[NotifierHandler] consumed: %v\n", notifierRequest)
 
+	// Handle email notification
 	if notifierRequest.IsEmail() {
 		notification := domain.EmailNotification{
 			Email:   notifierRequest.EmailSetting.Email,
@@ -53,14 +55,15 @@ func (h *NotifierHandler) Handle(d rabbitmq.Delivery) rabbitmq.Action {
 		if notifierRequest.WithTemplate() {
 			msg, err := h.parseTemplate(notifierRequest)
 			if err != nil {
-				//
+				log.Error("[NotifierHandler] template parse error: ", err.Error())
+				return rabbitmq.Ack
 			}
 			notification.Message = msg
 		}
 
 		if err := h.smtpAdapter.Send(&notification); err != nil {
-			// TODO
-			log.Errorf("[] Failed send to: ", notifierRequest.EmailSetting.Email)
+			log.Error("[NotifierHandler] Failed send to: ", notifierRequest.EmailSetting.Email)
+			return h.tryResend(notifierRequest)
 		}
 	}
 
@@ -68,11 +71,11 @@ func (h *NotifierHandler) Handle(d rabbitmq.Delivery) rabbitmq.Action {
 		notification := domain.SMSNotification{
 			Phone:   notifierRequest.PhoneSetting.Number,
 			Message: notifierRequest.PhoneSetting.Text,
-			TeamID:  "",
 		}
 
 		if err := h.smsAdapter.Send(&notification); err != nil {
-			// TODO
+			log.Error("[NotifierHandler] Failed send to: ", notifierRequest.PhoneSetting.Number)
+			return h.tryResend(notifierRequest)
 		}
 	}
 
@@ -115,8 +118,8 @@ func (h *NotifierHandler) Handle(d rabbitmq.Delivery) rabbitmq.Action {
 	return rabbitmq.Ack
 }
 
-func (h *NotifierHandler) parseReq(b []byte) *notifier_dtos.NotifierReqDto {
-	req := notifier_dtos.NotifierReqDto{
+func (h *NotifierHandler) parse(b []byte) *notifierDtos.NotifierPayloadDto {
+	req := notifierDtos.NotifierPayloadDto{
 		TimeReqStart: time.Now(),
 	}
 	if err := json.Unmarshal(b, &req); err != nil {
@@ -126,9 +129,9 @@ func (h *NotifierHandler) parseReq(b []byte) *notifier_dtos.NotifierReqDto {
 	return &req
 }
 
-func (h *NotifierHandler) tryResend(req *notifier_dtos.NotifierReqDto) rabbitmq.Action {
+func (h *NotifierHandler) tryResend(req *notifierDtos.NotifierPayloadDto) rabbitmq.Action {
 	fmt.Printf("[NotifierHandler] Error: %v\n", req.Error)
-	reqRes := notifier_dtos.NotifierResendReqDto{
+	reqRes := notifierDtos.NotifierResendRequestDto{
 		Req:     *req,
 		Error:   req.Error.Error(),
 		TimeReq: time.Now().Sub(req.TimeReqStart).String(),
@@ -140,7 +143,7 @@ func (h *NotifierHandler) tryResend(req *notifier_dtos.NotifierReqDto) rabbitmq.
 	return rabbitmq.Ack
 }
 
-func (h *NotifierHandler) parseTemplate(req *notifier_dtos.NotifierReqDto) (msg string, err error) {
+func (h *NotifierHandler) parseTemplate(req *notifierDtos.NotifierPayloadDto) (msg string, err error) {
 	tml, err := template.ParseFiles(req.EmailSetting.Template)
 	if err != nil {
 		return "", errors.New("[NotifierHandler] Cannot parse template")

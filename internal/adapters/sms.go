@@ -26,10 +26,10 @@ func NewSMSAdapter(
 	}
 }
 
-// HINT: implement own logic here, 'cause we use some own backend
-func (s *SMSAdapter) Send(req *domain.SMSNotification) (err error) {
+// Send implement own logic here
+func (s *SMSAdapter) Send(notification *domain.SMSNotification) (err error) {
 
-	err = domain.ValidateSMSNotification(req)
+	err = domain.ValidateSMSNotification(notification)
 	if err != nil {
 		log.Println("[SMSAdapter] Not valid sms notification: " + err.Error())
 		return
@@ -44,10 +44,10 @@ func (s *SMSAdapter) Send(req *domain.SMSNotification) (err error) {
 		"action":      {"sendmessage"},
 		"username":    {s.config.Username},
 		"password":    {s.config.Password},
-		"recipient":   {req.Phone},
+		"recipient":   {notification.Phone},
 		"messagetype": {"SMS:TEXT"},
-		"originator":  {req.TeamID},
-		"messagedata": {req.Message},
+		"originator":  {""},
+		"messagedata": {notification.Message},
 	}
 
 	requestUrl := fmt.Sprintf("%v?%v", baseURL, queryParams.Encode())

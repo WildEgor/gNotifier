@@ -6,7 +6,9 @@ import (
 )
 
 type FCMConfig struct {
-	APIKey string `env:"FCM_ANDROID_API_KEY"`
+	APIKey     string `env:"FCM_ANDROID_API_KEY"`
+	Production bool   `env:"FCM_PRODUCTION"`
+	MaxRetry   int    `env:"FCM_MAX_RETRY"`
 }
 
 func NewFCMConfig(c *Configurator) *FCMConfig {
@@ -19,6 +21,10 @@ func NewFCMConfig(c *Configurator) *FCMConfig {
 
 		if cfg.APIKey == "" {
 			log.Fatal("[FCMConfig] Failed load Android API key!")
+		}
+
+		if cfg.MaxRetry == 0 {
+			cfg.MaxRetry = 5
 		}
 	}
 

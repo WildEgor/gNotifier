@@ -2,13 +2,14 @@ package mongo
 
 import (
 	"context"
+	"github.com/pkg/errors"
 	"strings"
 	"time"
 
-	models "github.com/WildEgor/gNotifier/internal/models"
+	"github.com/WildEgor/gNotifier/internal/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	mongo "go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 const (
@@ -39,12 +40,13 @@ func NewTokensRepository(db *mongo.Database) (*TokensRepository, error) {
 
 func (r *TokensRepository) FindSub(f *TokensFilter) (*models.SubTokenModel, error) {
 	var result *models.SubTokenModel
+	var (
+		andQuery []bson.M
+		query    []bson.M
+	)
 
 	ctx, cancel := context.WithTimeout(context.Background(), mongoQueryTimeout)
 	defer cancel()
-
-	var andQuery []bson.M
-	var query []bson.M = []bson.M{}
 
 	if len(f.Platform) > 0 {
 		query = append(query, bson.M{"platform": bson.M{"$eq": f.Platform}})
@@ -69,13 +71,16 @@ func (r *TokensRepository) FindSub(f *TokensFilter) (*models.SubTokenModel, erro
 
 	err := r.collection.FindOne(ctx, andQuery)
 	if err != nil {
-		if err.Err() == mongo.ErrNoDocuments {
+		if errors.Is(err.Err(), mongo.ErrNoDocuments) {
 			return nil, nil
 		}
 		return nil, err.Err()
 	}
 
-	err.Decode(&result)
+	dErr := err.Decode(&result)
+	if dErr != nil {
+		return nil, dErr
+	}
 
 	return result, nil
 }
@@ -93,10 +98,13 @@ func (r *TokensRepository) UpsertToken(m *models.SubTokenCreateModel) (*models.S
 		},
 	})
 	if err != nil {
-		if err.Err() == mongo.ErrNoDocuments {
+		if errors.Is(err.Err(), mongo.ErrNoDocuments) {
 		}
 	} else {
-		err.Decode(&existedResult)
+		err := err.Decode(&existedResult)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if existedResult != nil {
@@ -130,7 +138,7 @@ func (r *TokensRepository) UpsertToken(m *models.SubTokenCreateModel) (*models.S
 
 		_, err := r.collection.UpdateOne(ctx, findQuery, updateQuery)
 		if err != nil {
-
+			return nil, err
 		}
 	}
 

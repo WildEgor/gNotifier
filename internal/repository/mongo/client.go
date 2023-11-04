@@ -2,7 +2,7 @@ package mongo
 
 import (
 	"github.com/WildEgor/gNotifier/internal/configs"
-	mongo "go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 

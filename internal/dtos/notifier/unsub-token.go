@@ -10,8 +10,5 @@ type UnsubTokenReqDto struct {
 }
 
 func (r *UnsubTokenReqDto) HasError() bool {
-	if r.Error != nil {
-		return true
-	}
-	return false
+	return r.Error != nil
 }

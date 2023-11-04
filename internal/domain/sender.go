@@ -1,10 +1,8 @@
-package services
-
-import "github.com/WildEgor/gNotifier/internal/domain"
+package domain
 
 // ISender Interface for future Senders
 type ISender interface {
-	Send(req *domain.PushNotification) error
+	Send(req *PushNotification) error
 }
 
 // Sender Strategy Pattern
@@ -26,7 +24,7 @@ func (s *Sender) SetTransport(t ISender) *Sender {
 }
 
 // Send Execute send method
-func (s *Sender) Send(req *domain.PushNotification) error {
+func (s *Sender) Send(req *PushNotification) error {
 	err := s.sender.Send(req)
 	return err
 }

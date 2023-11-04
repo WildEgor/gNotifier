@@ -14,7 +14,7 @@ type HealthCheckConfig struct {
 	HealthCheckAdapter *adapters.HealthCheckAdapter
 }
 
-// Example how we can use middleware
+// HealthCheck Example how we can use middleware
 func HealthCheck(cfg *HealthCheckConfig) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		methodName := ctx.Method()

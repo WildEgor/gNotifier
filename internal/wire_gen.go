@@ -37,7 +37,7 @@ func NewServer() (*fiber.App, error) {
 		return nil, err
 	}
 	storeTokenHandler := handlers.NewStoreTokenHandler(tokensRepository)
-	unsubTokenHandler := handlers.NewUnsubTokenHandler()
+	unsubTokenHandler := handlers.NewUnsubTokenHandler(tokensRepository)
 	httpRouter := routers.NewHTTPRouter(healthCheckAdapter, storeTokenHandler, unsubTokenHandler)
 	smtpConfig := configs.NewSMTPConfig(configurator)
 	smtpAdapter := adapters.NewSMTPAdapter(smtpConfig)

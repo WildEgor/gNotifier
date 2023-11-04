@@ -27,9 +27,10 @@ func NewSMTPAdapter(
 	}
 }
 
-func (s *SMTPAdapter) Send(req *domain.EmailNotification) (err error) {
+// Send impl logic here
+func (s *SMTPAdapter) Send(notification *domain.EmailNotification) (err error) {
 
-	err = domain.ValidateEmailNotification(req)
+	err = domain.ValidateEmailNotification(notification)
 	if err != nil {
 		log.Println("[SMTPAdapter] Not valid email notification: " + err.Error())
 		return
@@ -38,15 +39,15 @@ func (s *SMTPAdapter) Send(req *domain.EmailNotification) (err error) {
 	address := fmt.Sprintf("%v:%v", s.config.Host, s.config.Port)
 	auth := sasl.NewPlainClient("", s.config.Username, s.config.Password)
 
-	to := []string{req.Email}
+	to := []string{notification.Email}
 	msg := strings.NewReader(
 		"To: " +
-			req.Email +
+			notification.Email +
 			"\r\n" +
 			"Subject: " +
-			req.Subject +
+			notification.Subject +
 			"\r\n" +
-			req.Message +
+			notification.Message +
 			"\r\n",
 	)
 

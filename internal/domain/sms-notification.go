@@ -6,7 +6,6 @@ import (
 )
 
 type SMSNotification struct {
-	TeamID  string `json:"team_id"`
 	Phone   string `json:"phone,omitempty"`
 	Message string `json:"message,omitempty"`
 }

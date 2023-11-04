@@ -5,82 +5,68 @@ import (
 	"time"
 )
 
-type NotifierResendReqDto struct {
-	Req     NotifierReqDto `json:"request"`
-	Error   string         `json:"error"`
-	TimeReq string         `json:"time_req"`
+type NotifierResendRequestDto struct {
+	Req     NotifierPayloadDto `json:"request"`
+	Error   string             `json:"error"`
+	TimeReq string             `json:"time_req"`
 }
 
-type NotifierReqDto struct {
+type NotifierPayloadDto struct {
 	Type         string `json:"type"`
 	EmailSetting struct {
 		Email    string      `json:"email"`
 		Subject  string      `json:"subject"`
-		Template string      `json:"template"`
-		Text     string      `json:"text"`
-		Data     interface{} `json:"data"`
-	} `json:"email_setting"`
+		Template string      `json:"template,omitempty"`
+		Text     string      `json:"text,omitempty"`
+		Data     interface{} `json:"data,omitempty"`
+	} `json:"email_setting,omitempty"`
 	PhoneSetting struct {
 		Number string `json:"number"`
 		Text   string `json:"text"`
-	} `json:"phone_setting"`
+	} `json:"phone_setting,omitempty"`
 	PushSetting struct {
 		To       string      `json:"to"`
 		Platform string      `json:"platform"`
-		Image    string      `json:"image"`
-		Template string      `json:"template"`
-		Title    string      `json:"title"`
-		Message  string      `json:"message"`
-		Data     interface{} `json:"data"`
-	} `json:"push_settings"`
+		Image    string      `json:"image,omitempty"`
+		Title    string      `json:"title,omitempty"`
+		Message  string      `json:"message,omitempty"`
+		Template string      `json:"template,omitempty"`
+		Data     interface{} `json:"data,omitempty"`
+	} `json:"push_settings,omitempty"`
 	Data         interface{} `json:"data"`
 	Error        error       `json:"-"`
 	TimeReqStart time.Time   `json:"-"`
 }
 
-func (r *NotifierReqDto) IsSms() bool {
+func (r *NotifierPayloadDto) IsSms() bool {
 	if r.Type == "sms" {
 		return true
 	}
+
 	return false
 }
 
-func (r *NotifierReqDto) IsEmail() bool {
-	if r.Type == "email" {
-		return true
-	}
-	return false
+func (r *NotifierPayloadDto) IsEmail() bool {
+	return r.Type == "email"
 }
 
-func (r *NotifierReqDto) IsPush() bool {
-	if r.Type == "push" {
-		return true
-	}
-	return false
+func (r *NotifierPayloadDto) IsPush() bool {
+	return r.Type == "push"
 }
 
-func (r *NotifierReqDto) IsForAndroid() bool {
-	if r.Type == "push" && r.PushSetting.Platform == "ANDROID" {
-		return true
-	}
-	return false
+func (r *NotifierPayloadDto) IsForAndroid() bool {
+	return r.Type == "push" && r.PushSetting.Platform == "ANDROID"
 }
 
-func (r *NotifierReqDto) IsForIOS() bool {
-	if r.Type == "push" && r.PushSetting.Platform == "IOS" {
-		return true
-	}
-	return false
+func (r *NotifierPayloadDto) IsForIOS() bool {
+	return r.Type == "push" && r.PushSetting.Platform == "IOS"
 }
 
-func (r *NotifierReqDto) WithTemplate() bool {
-	if r.EmailSetting.Template != "" || r.PushSetting.Template != "" {
-		return true
-	}
-	return false
+func (r *NotifierPayloadDto) WithTemplate() bool {
+	return r.EmailSetting.Template != "" || r.PushSetting.Template != ""
 }
 
-func (r *NotifierReqDto) ValidateType() bool {
+func (r *NotifierPayloadDto) ValidateType() bool {
 	if r.Type != "sms" && r.Type != "email" && r.Type != "push" {
 		r.Error = errors.New("[NotifierReqDto] Error type - " + r.Type)
 		return false
@@ -88,7 +74,7 @@ func (r *NotifierReqDto) ValidateType() bool {
 	return true
 }
 
-func (r *NotifierReqDto) ValidateEmail() bool {
+func (r *NotifierPayloadDto) ValidateEmail() bool {
 	if len(r.EmailSetting.Email) == 0 {
 		r.Error = errors.New("[NotifierReqDto] Error pass email param")
 		return false
@@ -105,7 +91,7 @@ func (r *NotifierReqDto) ValidateEmail() bool {
 	return true
 }
 
-func (r *NotifierReqDto) ValidateSms() bool {
+func (r *NotifierPayloadDto) ValidateSms() bool {
 	if len(r.PhoneSetting.Number) == 0 || len(r.PhoneSetting.Text) == 0 {
 		r.Error = errors.New("[NotifierReqDto] Error pass sms params")
 		return false
@@ -113,7 +99,7 @@ func (r *NotifierReqDto) ValidateSms() bool {
 	return true
 }
 
-func (r *NotifierReqDto) ValidatePush() bool {
+func (r *NotifierPayloadDto) ValidatePush() bool {
 	if len(r.PushSetting.To) == 0 {
 		r.Error = errors.New("[NotifierReqDto] Empty param in PushSetting")
 		return false
@@ -122,9 +108,6 @@ func (r *NotifierReqDto) ValidatePush() bool {
 	return true
 }
 
-func (r *NotifierReqDto) HasError() bool {
-	if r.Error != nil {
-		return true
-	}
-	return false
+func (r *NotifierPayloadDto) HasError() bool {
+	return r.Error != nil
 }
