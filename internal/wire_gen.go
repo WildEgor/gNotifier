@@ -13,13 +13,12 @@ import (
 	"github.com/WildEgor/gNotifier/internal/handlers/http"
 	"github.com/WildEgor/gNotifier/internal/repository/mongo"
 	"github.com/WildEgor/gNotifier/internal/routers"
-	"github.com/gofiber/fiber/v2"
 	"github.com/google/wire"
 )
 
 // Injectors from server.go:
 
-func NewServer() (*fiber.App, error) {
+func NewServer() (*Server, error) {
 	configurator := configs.NewConfigurator()
 	appConfig := configs.NewAppConfig(configurator)
 	healthCheckAdapter, err := adapters.NewHealthCheckAdapter()
@@ -50,8 +49,8 @@ func NewServer() (*fiber.App, error) {
 	notifierHandler := handlers2.NewNotifierHandler(smtpAdapter, smsAdapter, fcmAdapter, apnAdapter)
 	amqpConfig := configs.NewAMQPConfig(configurator)
 	amqpRouter := routers.NewAMQPRouter(notifierHandler, amqpConfig, healthCheckAdapter)
-	app := NewApp(appConfig, httpRouter, amqpRouter)
-	return app, nil
+	server := NewApp(appConfig, httpRouter, amqpRouter)
+	return server, nil
 }
 
 // server.go:

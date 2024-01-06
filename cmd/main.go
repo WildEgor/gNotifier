@@ -1,18 +1,13 @@
 package main
 
 import (
-	"fmt"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
 	server "github.com/WildEgor/gNotifier/internal"
-	"github.com/gofiber/fiber/v2"
 	log "github.com/sirupsen/logrus"
 )
-
-var srv *fiber.App
 
 func main() {
 	Start()
@@ -20,12 +15,14 @@ func main() {
 }
 
 func Start() {
-	srv, _ = server.NewServer()
-	go func() {
-		if err := srv.Listen(fmt.Sprintf(":%v", "8888")); err != nil && err != http.ErrServerClosed {
-			panic(err)
-		}
-	}()
+	srv, _ := server.NewServer()
+	log.Printf("Server is listening on PORT: %s", srv.AppConfig.Port)
+
+	addr := ":" + srv.AppConfig.Port
+
+	if err := srv.App.Listen(addr); err != nil {
+		log.Panicf("[CRIT] Unable to start server. Reason: %v", err)
+	}
 }
 
 func Shutdown() {
