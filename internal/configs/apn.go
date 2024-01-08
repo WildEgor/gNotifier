@@ -20,10 +20,8 @@ func NewAPNConfig(
 ) *APNConfig {
 	cfg := APNConfig{}
 
-	if err := c.Load(); err == nil {
-		if err := env.Parse(&cfg); err != nil {
-			log.Printf("[APNConfig] %+v\n", err)
-		}
+	if err := env.Parse(&cfg); err != nil {
+		log.Printf("[APNConfig] %+v\n", err)
 	}
 
 	return &cfg

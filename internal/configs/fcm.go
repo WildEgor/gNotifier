@@ -14,18 +14,16 @@ type FCMConfig struct {
 func NewFCMConfig(c *Configurator) *FCMConfig {
 	cfg := FCMConfig{}
 
-	if err := c.Load(); err == nil {
-		if err := env.Parse(&cfg); err != nil {
-			log.Printf("[FCMConfig] %+v\n", err)
-		}
+	if err := env.Parse(&cfg); err != nil {
+		log.Printf("[FCMConfig] %+v\n", err)
+	}
 
-		if cfg.APIKey == "" {
-			log.Fatal("[FCMConfig] Failed load Android API key!")
-		}
+	if cfg.APIKey == "" {
+		log.Fatal("[FCMConfig] Failed load Android API key!")
+	}
 
-		if cfg.MaxRetry == 0 {
-			cfg.MaxRetry = 5
-		}
+	if cfg.MaxRetry == 0 {
+		cfg.MaxRetry = 5
 	}
 
 	return &cfg

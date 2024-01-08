@@ -18,10 +18,8 @@ type MongoConfig struct {
 func NewMongoConfig(c *Configurator) *MongoConfig {
 	cfg := MongoConfig{}
 
-	if err := c.Load(); err == nil {
-		if err := env.Parse(&cfg); err != nil {
-			log.Printf("%+v\n", err)
-		}
+	if err := env.Parse(&cfg); err != nil {
+		log.Printf("%+v\n", err)
 	}
 
 	return &cfg

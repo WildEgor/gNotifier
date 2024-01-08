@@ -1,6 +1,9 @@
 package configs
 
-import "github.com/joho/godotenv"
+import (
+	"github.com/joho/godotenv"
+	log "github.com/sirupsen/logrus"
+)
 
 type Configurator struct {
 	envs []string
@@ -9,12 +12,18 @@ type Configurator struct {
 func NewConfigurator() *Configurator {
 	var envs = []string{".env", ".env.local"}
 
-	return &Configurator{
+	conf := &Configurator{
 		envs: envs,
 	}
+
+	conf.Load()
+
+	return conf
 }
 
-func (c *Configurator) Load() error {
+func (c *Configurator) Load() {
 	err := godotenv.Load(c.envs...)
-	return err
+	if err != nil {
+		log.Fatal("Error loading envs file")
+	}
 }

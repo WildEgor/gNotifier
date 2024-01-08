@@ -14,10 +14,8 @@ type SMSConfig struct {
 func NewSMSConfig(c *Configurator) *SMSConfig {
 	cfg := SMSConfig{}
 
-	if err := c.Load(); err == nil {
-		if err := env.Parse(&cfg); err != nil {
-			log.Printf("[SMSConfig] %+v\n", err)
-		}
+	if err := env.Parse(&cfg); err != nil {
+		log.Printf("[SMSConfig] %+v\n", err)
 	}
 
 	return &cfg

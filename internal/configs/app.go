@@ -17,18 +17,16 @@ func NewAppConfig(
 ) *AppConfig {
 	cfg := AppConfig{}
 
-	if err := c.Load(); err == nil {
-		if err := env.Parse(&cfg); err != nil {
-			log.Printf("%+v\n", err)
-		}
+	if err := env.Parse(&cfg); err != nil {
+		log.Printf("%+v\n", err)
+	}
 
-		if cfg.GoEnv == "" {
-			cfg.GoEnv = "local"
-		}
+	if cfg.GoEnv == "" {
+		cfg.GoEnv = "local"
+	}
 
-		if cfg.Version == "" {
-			cfg.Version = "local"
-		}
+	if cfg.Version == "" {
+		cfg.Version = "local"
 	}
 
 	return &cfg

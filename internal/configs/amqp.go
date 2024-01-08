@@ -14,10 +14,8 @@ func NewAMQPConfig(
 ) *AMQPConfig {
 	cfg := AMQPConfig{}
 
-	if err := c.Load(); err == nil {
-		if err := env.Parse(&cfg); err != nil {
-			log.Printf("%+v\n", err)
-		}
+	if err := env.Parse(&cfg); err != nil {
+		log.Printf("%+v\n", err)
 	}
 
 	return &cfg
